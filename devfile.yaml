@@ -1,0 +1,43 @@
+schemaVersion: 2.2.0
+metadata:
+  name: devspaces-vscode-gitea
+  description: Workspace with VS Code and Gitea
+  version: 1.0.0
+
+attributes:
+  # VS Code (Code OSS) をデフォルトエディタとして指定
+  controller.devfile.io/default-editor: che-incubator/che-code/latest
+
+components:
+  # 1. 開発用メインコンテナ (VS Codeが動く環境)
+  - name: tools
+    container:
+      image: quay.io/devfile/universal-developer-image:latest
+      memoryLimit: 2G
+      mountSources: true
+
+  # 2. Gitea データ永続化用ボリューム
+  - name: gitea-data
+    volume:
+      size: 2Gi
+
+  # 3. Gitea コンテナ (OpenShift SCC対応のためrootless版を使用)
+  - name: gitea
+    container:
+      image: quay.io/gpte-devops-automation/gitea:1.19.0
+      memoryLimit: 1G
+      endpoints:
+        - name: gitea-web
+          targetPort: 3000
+          exposure: public
+          protocol: http
+      env:
+        - name: GITEA__database__DB_TYPE
+          value: sqlite3
+        - name: GITEA__server__HTTP_PORT
+          value: "3000"
+        - name: GITEA__server__HTTP_ADDR
+          value: "0.0.0.0"
+      volumeMounts:
+        - name: gitea-data
+          path: /var/lib/gitea
