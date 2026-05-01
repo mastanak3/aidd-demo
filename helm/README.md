@@ -10,9 +10,14 @@ OpenShiftにDev Spaces OperatorとDev Spacesのインスタンスを構築する
   - 本レポジトリのURL: `https://github.com/mastanak3/aidd-demo`
   - ブランチ名: `main`
   - エントリーポイントのディレクトリ名: `helm`
+- `Create users on cluster?`にチェックを入れ、デモユーザーの数を入力。
 - その他プロジェクト情報を入力し、Orderを確定する。しばらくするとクラスターが払い出される。
 - 表示された認証情報を用いてクラスターにログイン。
 - `openshift-devspaces`プロジェクト内の`devspaces` Routeリソースを検索。`location`のURLからDashBoardにアクセス可能。
 - Workspaceの払出しは、以下で行う。
   - DashBoard操作でのリクエスト。
   - Factory URL (DashBoardのURL + devfileを格納するレポジトリURL)へのアクセスによるリクエスト。
+
+## 注意
+- Dev Spacesのワークスペースは、OpenShiftのユーザー単位で割り当てられたProjectに作成されます。
+ワークスペース分離のため、OpenShiftのユーザーは必ずデモユーザーの数を指定してください。
