@@ -24,7 +24,7 @@ components:
   # 3. Gitea コンテナ (OpenShift SCC対応のためrootless版を使用)
   - name: gitea
     container:
-      image: docker.gitea.com/gitea:latest-rootless
+      image: quay.io/gpte-devops-automation/gitea:1.19.0
       memoryLimit: 1G
       endpoints:
         - name: gitea-web
