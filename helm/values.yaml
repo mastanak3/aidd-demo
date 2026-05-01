@@ -3,7 +3,7 @@
 # ============================================================
 gitops:
   # Repository containing the component charts
-  repoUrl: "https://github.com/rhatada/devspaces-infra.git"
+  repoUrl: "https://github.com/mastanak3/aidd-demo.git"
   revision: "main"
   basePath: "helm"
 
