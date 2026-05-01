@@ -1,0 +1,66 @@
+{{- if .Values.devspaces_instance.enabled }}
+---
+apiVersion: org.eclipse.che/v2
+kind: CheCluster
+metadata:
+  name: {{ .Values.devspaces_instance.name }}
+  namespace: {{ .Values.devspaces_instance.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  components:
+    cheServer:
+      debug: false
+      logLevel: INFO
+    dashboard:
+      logLevel: ERROR
+    devWorkspace: {}
+    devfileRegistry: {}
+    imagePuller:
+      enable: false
+      spec: {}
+    metrics:
+      enable: true
+    pluginRegistry: {}
+  containerRegistry: {}
+  devEnvironments:
+    startTimeoutSeconds: {{ .Values.devspaces_instance.devEnvironments.startTimeoutSeconds }}
+    security: {}
+    secondsOfRunBeforeIdling: {{ .Values.devspaces_instance.devEnvironments.secondsOfRunBeforeIdling }}
+    maxNumberOfWorkspacesPerUser: {{ .Values.devspaces_instance.devEnvironments.maxNumberOfWorkspacesPerUser }}
+    disableContainerRunCapabilities: true
+    containerBuildConfiguration:
+      openShiftSecurityContextConstraint: container-build
+    containerRunConfiguration:
+      containerSecurityContext:
+        allowPrivilegeEscalation: true
+        capabilities:
+          add:
+            - SETGID
+            - SETUID
+        procMount: Unmasked
+      openShiftSecurityContextConstraint: container-run
+      workspacesPodAnnotations:
+        io.kubernetes.cri-o.Devices: '/dev/fuse,/dev/net/tun'
+    ignoredUnrecoverableEvents:
+      - FailedScheduling
+    defaultNamespace:
+      autoProvision: true
+      template: <username>-devspaces
+    secondsOfInactivityBeforeIdling: {{ .Values.devspaces_instance.devEnvironments.secondsOfInactivityBeforeIdling }}
+    storage:
+      pvcStrategy: per-user
+  gitServices: {}
+  networking:
+    auth:
+      gateway:
+        configLabels:
+          app: che
+          component: che-gateway-config
+        kubeRbacProxy:
+          logLevel: 0
+        oAuthProxy:
+          cookieExpireSeconds: 86400
+        traefik:
+          logLevel: INFO
+{{- end }}

@@ -1,0 +1,52 @@
+# ============================================================
+# GitOps Configuration
+# ============================================================
+gitops:
+  # Repository containing the component charts
+  repoUrl: "https://github.com/rhatada/devspaces-infra.git"
+  revision: "main"
+  basePath: "helm"
+
+# ArgoCD settings
+argocd:
+  namespace: openshift-gitops
+  project: default
+
+# ============================================================
+# Components - Enable/disable and configure each component
+# ============================================================
+components:
+
+  # --- Operator Installation ---
+  devspaces:
+    enabled: true
+    name: devspaces
+    namespace: openshift-devspaces
+    channel: stable
+    source: redhat-operators
+    sourceNamespace: openshift-marketplace
+    installPlanApproval: Automatic
+    allNamespaces: true  # DevWorkspace requires AllNamespaces mode
+
+# ============================================================
+# Dev Space Instance - Created after operators are installed
+# ============================================================
+devspaces_instance:
+  enabled: true
+  name: devspaces
+  namespace: openshift-devspaces
+  devEnvironments:
+    startTimeoutSeconds: 300
+    secondsOfRunBeforeIdling: -1
+    maxNumberOfWorkspacesPerUser: -1
+    secondsOfInactivityBeforeIdling: 1800
+
+# ============================================================
+# Values injected by field content workload (do not modify)
+# ============================================================
+deployer:
+  domain: ""
+  apiUrl: ""
+
+fieldContent:
+  deploymentType: "helm"
