@@ -39,6 +39,7 @@ devspaces_instance:
     startTimeoutSeconds: 300
     secondsOfRunBeforeIdling: -1
     maxNumberOfWorkspacesPerUser: -1
+    maxNumberOfRunningWorkspacesPerUser: -1
     secondsOfInactivityBeforeIdling: 1800
 
 # ============================================================

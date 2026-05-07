@@ -28,6 +28,7 @@ spec:
     security: {}
     secondsOfRunBeforeIdling: {{ .Values.devspaces_instance.devEnvironments.secondsOfRunBeforeIdling }}
     maxNumberOfWorkspacesPerUser: {{ .Values.devspaces_instance.devEnvironments.maxNumberOfWorkspacesPerUser }}
+    maxNumberOfRunningWorkspacesPerUser: {{ .Values.devspaces_instance.devEnvironments.maxNumberOfRunningWorkspacesPerUser }}
     disableContainerRunCapabilities: true
     containerBuildConfiguration:
       openShiftSecurityContextConstraint: container-build
