@@ -15,7 +15,7 @@ components:
       mountSources: true
       env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
-          value: /home/user/.claude/auth.json
+          value: /home/user/gcp-secret/auth.json
         - name: ANTHROPIC_VERTEX_PROJECT_ID
           value: "itpc-gcp-global-revenue-claude"
         - name: ANTHROPIC_VERTEX_REGION
