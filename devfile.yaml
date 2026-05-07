@@ -1,27 +1,36 @@
 schemaVersion: 2.2.0
 metadata:
-  name: devspaces-vscode-gitea
-  description: Workspace with VS Code and Gitea
-  version: 1.0.0
+  name: devspaces-claude-verify
+  description: Workspace with VS Code, Gitea, and Claude Code (Verification Mode)
+  version: 1.0.5
 
 attributes:
-  # VS Code (Code OSS) をデフォルトエディタとして指定
   controller.devfile.io/default-editor: che-incubator/che-code/latest
 
 components:
-  # 1. 開発用メインコンテナ (VS Codeが動く環境)
   - name: tools
     container:
       image: quay.io/devfile/universal-developer-image:latest
-      memoryLimit: 2G
+      memoryLimit: 4G
       mountSources: true
+      env:
+        - name: CLAUDE_CONFIG_SOURCES
+          value: /home/user/.claude/auth.json
+      volumeMounts:
+        - name: claude-auth-vol
+          path: /home/user/.claude
+  
+  - name: claude-auth-vol
+    inventory:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: claude-code-auth
 
-  # 2. Gitea データ永続化用ボリューム
   - name: gitea-data
     volume:
       size: 2Gi
 
-  # 3. Gitea コンテナ (OpenShift SCC対応のためrootless版を使用)
   - name: gitea
     container:
       image: quay.io/gpte-devops-automation/gitea:1.19.0
@@ -40,4 +49,15 @@ components:
           value: "0.0.0.0"
       volumeMounts:
         - name: gitea-data
-          path: /var/lib/gitea
+          path: /data
+
+commands:
+  - id: install-claude
+    exec:
+      component: tools
+      commandLine: "npm install -g @anthropic-ai/claude-code"
+      workingDir: /projects
+
+events:
+  postStart:
+    - install-claude
