@@ -2,7 +2,7 @@ schemaVersion: 2.2.0
 metadata:
   name: devspaces-claude-verify
   description: Workspace with VS Code, Gitea, and Claude Code (Verification Mode)
-  version: 1.0.5
+  version: 1.0.6
 
 attributes:
   controller.devfile.io/default-editor: che-incubator/che-code/latest
@@ -16,16 +16,6 @@ components:
       env:
         - name: CLAUDE_CONFIG_SOURCES
           value: /home/user/.claude/auth.json
-      volumeMounts:
-        - name: claude-auth-vol
-          path: /home/user/.claude
-  
-  - name: claude-auth-vol
-    inventory:
-      apiVersion: v1
-      kind: Secret
-      metadata:
-        name: claude-code-auth
 
   - name: gitea-data
     volume:
