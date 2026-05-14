@@ -1,6 +1,7 @@
 package com.example.library.resource;
 
 import com.example.library.App;
+import com.example.library.TestDatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -11,19 +12,26 @@ import org.junit.jupiter.api.*;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class BookResourceTest {
 
     private static final int PORT = 18081;
     private static HttpServer server;
     private static Weld weld;
+    private static WeldContainer container;
+    private static TestDatabaseCleaner cleaner;
 
     @BeforeAll
-    static void setUp() {
+    static void setUpClass() {
         weld = new Weld();
-        WeldContainer container = weld.initialize();
+        container = weld.initialize();
+        cleaner = container.select(TestDatabaseCleaner.class).get();
         server = App.startServer(container, PORT);
         RestAssured.baseURI = "http://localhost:" + PORT + "/api/";
+    }
+
+    @BeforeEach
+    void setUp() {
+        cleaner.cleanAll();
     }
 
     @AfterAll
@@ -33,7 +41,6 @@ class BookResourceTest {
     }
 
     @Test
-    @Order(1)
     void 書籍を登録してレスポンスを検証() {
         given()
             .contentType(ContentType.JSON)
@@ -52,8 +59,16 @@ class BookResourceTest {
     }
 
     @Test
-    @Order(2)
     void 全書籍を取得できる() {
+        // テストデータを作成
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {"title": "書籍A", "author": "著者A", "isbn": "ISBN-A"}
+                """)
+        .when()
+            .post("books");
+
         when()
             .get("books")
         .then()
@@ -62,7 +77,6 @@ class BookResourceTest {
     }
 
     @Test
-    @Order(3)
     void IDで書籍を取得できる() {
         int id = given()
             .contentType(ContentType.JSON)
@@ -82,7 +96,6 @@ class BookResourceTest {
     }
 
     @Test
-    @Order(4)
     void 書籍を更新できる() {
         int id = given()
             .contentType(ContentType.JSON)
@@ -108,7 +121,6 @@ class BookResourceTest {
     }
 
     @Test
-    @Order(5)
     void 書籍を削除できる() {
         int id = given()
             .contentType(ContentType.JSON)
