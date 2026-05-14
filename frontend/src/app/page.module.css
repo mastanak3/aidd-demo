@@ -1,0 +1,41 @@
+.title {
+  font-size: 1.75rem;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.card {
+  display: block;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 24px;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+.card:hover {
+  border-color: #2563eb;
+  text-decoration: none;
+}
+
+.card h2 {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.card p {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
