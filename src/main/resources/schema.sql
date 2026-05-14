@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS books (
+    id BIGSERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    author VARCHAR(255) NOT NULL,
+    isbn VARCHAR(20) NOT NULL,
+    available BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS members (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    member_type VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS loans (
+    id BIGSERIAL PRIMARY KEY,
+    book_id BIGINT NOT NULL REFERENCES books(id),
+    member_id BIGINT NOT NULL REFERENCES members(id),
+    loan_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE
+);

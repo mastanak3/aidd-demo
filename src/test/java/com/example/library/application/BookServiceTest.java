@@ -1,10 +1,13 @@
 package com.example.library.application;
 
+import com.example.library.TestDatabaseCleaner;
 import com.example.library.domain.model.Book;
-import com.example.library.infrastructure.repository.InMemoryBookRepository;
+import com.example.library.infrastructure.database.DataSourceProducer;
+import com.example.library.infrastructure.repository.JdbcBookRepository;
 import org.jboss.weld.junit5.EnableWeld;
 import org.jboss.weld.junit5.WeldInitiator;
 import org.jboss.weld.junit5.WeldSetup;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import jakarta.inject.Inject;
@@ -15,10 +18,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class BookServiceTest {
 
     @WeldSetup
-    WeldInitiator weld = WeldInitiator.of(BookService.class, InMemoryBookRepository.class);
+    WeldInitiator weld = WeldInitiator.of(
+        BookService.class,
+        JdbcBookRepository.class,
+        DataSourceProducer.class,
+        TestDatabaseCleaner.class
+    );
 
     @Inject
     BookService bookService;
+
+    @Inject
+    TestDatabaseCleaner dbCleaner;
+
+    @BeforeEach
+    void setUp() {
+        dbCleaner.cleanAll();
+    }
 
     @Test
     void 書籍を登録できる() {
