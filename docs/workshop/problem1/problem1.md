@@ -224,7 +224,7 @@ AIに以下のプロンプトを出して、実装コードにバグを注入し
 > - 今回実装した延滞料金計算機能に加え、domainパッケージの既存のコードも試してください
 > 
 > 試すべきバグパターン: 
-> - `docs/workshop/mutation-testing-patterns.md`を参考）
+> - `mutation-testing-patterns.md`を参考）
 >
 > 重要:
 > - テストコードは一切変更しないでください
