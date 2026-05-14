@@ -1,0 +1,82 @@
+# App of Apps Pattern
+# This template generates ArgoCD Applications for each enabled component
+
+{{- range $name, $config := .Values.components }}
+{{- if $config.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ $.Release.Name }}-{{ $name }}
+  namespace: {{ $.Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "field-content"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ $.Values.argocd.project }}
+  source:
+    repoURL: {{ $.Values.gitops.repoUrl }}
+    targetRevision: {{ $.Values.gitops.revision }}
+    path: {{ $.Values.gitops.basePath }}/components/operator
+    helm:
+      valuesObject:
+        operator:
+          enabled: {{ $config.enabled }}
+          name: {{ $config.name }}
+          namespace: {{ $config.namespace }}
+          channel: {{ $config.channel }}
+          source: {{ $config.source }}
+          sourceNamespace: {{ $config.sourceNamespace }}
+          installPlanApproval: {{ $config.installPlanApproval }}
+          {{- if $config.allNamespaces }}
+          allNamespaces: {{ $config.allNamespaces }}
+          {{- end }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ $config.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+{{- end }}
+
+
+{{- if .Values.devspaces_instance.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-devspaces-instance
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "field-content"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/devspaces-instance
+    helm:
+      valuesObject:
+        devspaces_instance:
+          enabled: {{ .Values.devspaces_instance.enabled }}
+          name: {{ .Values.devspaces_instance.name }}
+          namespace: {{ .Values.devspaces_instance.namespace }}
+          devEnvironments:
+            {{- toYaml .Values.devspaces_instance.devEnvironments | nindent 12 }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.devspaces_instance.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
