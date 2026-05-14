@@ -1,0 +1,35 @@
+{
+  "name": "Library Management System",
+  "image": "mcr.microsoft.com/devcontainers/java:21",
+  "remoteUser": "root",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "none",
+      "installMaven": "true",
+      "installGradle": "false"
+    }
+  },
+  "postCreateCommand": "chmod 1777 /tmp && apt-get update && apt-get install -y python3-full && curl -fsSL https://sdk.cloud.google.com | bash -s -- --disable-prompts && npm install -g @anthropic-ai/claude-code",
+  // Note: Set GCP_PROJECT_ID manually before running setup-claude.local.sh
+  //   export GCP_PROJECT_ID=your-project-id
+  //   source ./setup-claude.local.sh
+  "containerEnv": {
+    "CLAUDE_CODE_USE_VERTEX": "1",
+    "CLOUD_ML_REGION": "us-east5"
+  },
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/root/google-cloud-sdk/bin"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack",
+        "anthropics.claude-code"
+      ]
+    }
+  },
+  "forwardPorts": [
+    8080
+  ]
+}
