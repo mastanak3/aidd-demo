@@ -1,6 +1,7 @@
 package com.example.library.resource;
 
 import com.example.library.App;
+import com.example.library.TestDatabaseCleaner;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -11,41 +12,26 @@ import org.junit.jupiter.api.*;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
-@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LoanResourceTest {
 
     private static final int PORT = 18083;
     private static HttpServer server;
     private static Weld weld;
-    private static int memberId;
-    private static int bookId;
+    private static WeldContainer container;
+    private static TestDatabaseCleaner cleaner;
 
     @BeforeAll
-    static void setUp() {
+    static void setUpClass() {
         weld = new Weld();
-        WeldContainer container = weld.initialize();
+        container = weld.initialize();
+        cleaner = container.select(TestDatabaseCleaner.class).get();
         server = App.startServer(container, PORT);
         RestAssured.baseURI = "http://localhost:" + PORT + "/api/";
+    }
 
-        memberId = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name": "田中太郎", "email": "tanaka@example.com", "memberType": "GENERAL"}
-                """)
-        .when()
-            .post("members")
-        .then()
-            .extract().path("id");
-
-        bookId = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"title": "テスト駆動開発", "author": "Kent Beck", "isbn": "978-4-274-21788-0"}
-                """)
-        .when()
-            .post("books")
-        .then()
-            .extract().path("id");
+    @BeforeEach
+    void setUp() {
+        cleaner.cleanAll();
     }
 
     @AfterAll
@@ -55,8 +41,10 @@ class LoanResourceTest {
     }
 
     @Test
-    @Order(1)
     void 書籍を貸出できる() {
+        int memberId = createMember("田中太郎", "tanaka@example.com");
+        int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
+
         given()
             .contentType(ContentType.JSON)
             .body("""
@@ -75,8 +63,19 @@ class LoanResourceTest {
     }
 
     @Test
-    @Order(2)
     void 全貸出を取得できる() {
+        int memberId = createMember("田中太郎", "tanaka@example.com");
+        int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
+
+        // 貸出を作成
+        given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {"memberId": %d, "bookId": %d}
+                """.formatted(memberId, bookId))
+        .when()
+            .post("loans");
+
         when()
             .get("loans")
         .then()
@@ -85,12 +84,20 @@ class LoanResourceTest {
     }
 
     @Test
-    @Order(3)
     void 書籍を返却できる() {
-        int loanId = when()
-            .get("loans")
+        int memberId = createMember("田中太郎", "tanaka@example.com");
+        int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
+
+        // 貸出を作成
+        int loanId = given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {"memberId": %d, "bookId": %d}
+                """.formatted(memberId, bookId))
+        .when()
+            .post("loans")
         .then()
-            .extract().path("[0].id");
+            .extract().path("id");
 
         given()
             .contentType(ContentType.JSON)
@@ -103,46 +110,56 @@ class LoanResourceTest {
     }
 
     @Test
-    @Order(4)
     void 貸出中の書籍は借りられない() {
-        int newBookId = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"title": "書籍X", "author": "著者X", "isbn": "ISBN-X"}
-                """)
-        .when()
-            .post("books")
-        .then()
-            .extract().path("id");
+        int memberId = createMember("田中太郎", "tanaka@example.com");
+        int bookId = createBook("書籍X", "著者X", "ISBN-X");
 
+        // 1人目が借りる
         given()
             .contentType(ContentType.JSON)
             .body("""
                 {"memberId": %d, "bookId": %d}
-                """.formatted(memberId, newBookId))
+                """.formatted(memberId, bookId))
         .when()
             .post("loans")
         .then()
             .statusCode(201);
 
-        int anotherMemberId = given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name": "鈴木", "email": "suzuki@example.com", "memberType": "GENERAL"}
-                """)
-        .when()
-            .post("members")
-        .then()
-            .extract().path("id");
+        // 2人目が同じ本を借りようとする
+        int anotherMemberId = createMember("鈴木", "suzuki@example.com");
 
         given()
             .contentType(ContentType.JSON)
             .body("""
                 {"memberId": %d, "bookId": %d}
-                """.formatted(anotherMemberId, newBookId))
+                """.formatted(anotherMemberId, bookId))
         .when()
             .post("loans")
         .then()
             .statusCode(409);
+    }
+
+    private int createMember(String name, String email) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {"name": "%s", "email": "%s", "memberType": "GENERAL"}
+                """.formatted(name, email))
+        .when()
+            .post("members")
+        .then()
+            .extract().path("id");
+    }
+
+    private int createBook(String title, String author, String isbn) {
+        return given()
+            .contentType(ContentType.JSON)
+            .body("""
+                {"title": "%s", "author": "%s", "isbn": "%s"}
+                """.formatted(title, author, isbn))
+        .when()
+            .post("books")
+        .then()
+            .extract().path("id");
     }
 }

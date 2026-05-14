@@ -1,12 +1,14 @@
 package com.example.library.application;
 
+import com.example.library.TestDatabaseCleaner;
 import com.example.library.domain.model.Book;
 import com.example.library.domain.model.Loan;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
-import com.example.library.infrastructure.repository.InMemoryBookRepository;
-import com.example.library.infrastructure.repository.InMemoryLoanRepository;
-import com.example.library.infrastructure.repository.InMemoryMemberRepository;
+import com.example.library.infrastructure.database.DataSourceProducer;
+import com.example.library.infrastructure.repository.JdbcBookRepository;
+import com.example.library.infrastructure.repository.JdbcLoanRepository;
+import com.example.library.infrastructure.repository.JdbcMemberRepository;
 import org.jboss.weld.junit5.EnableWeld;
 import org.jboss.weld.junit5.WeldInitiator;
 import org.jboss.weld.junit5.WeldSetup;
@@ -22,8 +24,15 @@ class LoanServiceTest {
 
     @WeldSetup
     WeldInitiator weld = WeldInitiator.of(
-            LoanService.class, BookService.class, MemberService.class,
-            InMemoryBookRepository.class, InMemoryMemberRepository.class, InMemoryLoanRepository.class);
+        LoanService.class,
+        BookService.class,
+        MemberService.class,
+        JdbcBookRepository.class,
+        JdbcMemberRepository.class,
+        JdbcLoanRepository.class,
+        DataSourceProducer.class,
+        TestDatabaseCleaner.class
+    );
 
     @Inject
     LoanService loanService;
@@ -34,11 +43,15 @@ class LoanServiceTest {
     @Inject
     MemberService memberService;
 
+    @Inject
+    TestDatabaseCleaner dbCleaner;
+
     private Member generalMember;
     private Book book;
 
     @BeforeEach
     void setUp() {
+        dbCleaner.cleanAll();
         generalMember = memberService.create("田中太郎", "tanaka@example.com", MemberType.GENERAL);
         book = bookService.create("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
     }

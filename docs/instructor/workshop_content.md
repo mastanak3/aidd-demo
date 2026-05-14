@@ -9,6 +9,12 @@
 - 会員CRUD（氏名、メールアドレス、会員種別: 一般/プレミアム）
 - 貸出・返却（書籍を借りる・返す）
 
+**技術的特徴:**
+- PostgreSQLを使った永続化層（JDBC + HikariCP）
+- 起動時の自動スキーマ作成（schema.sql）
+- モックを使わない実データベーステスト
+- テスト独立性の確保（各テストでDB初期化）
+
 **ドメインルール:**
 
 | 会員種別 | 同時貸出上限 | 貸出期間 |
@@ -22,11 +28,14 @@
 
 | カテゴリ | 技術 | バージョン |
 |---------|------|-----------|
-| 言語 | Java | 17 |
+| 言語 | Java | 21 |
 | ビルド | Maven | 3.9+ |
 | REST API | Jersey (JAX-RS 3.1) + Grizzly | 3.1.5 |
 | DI (CDI) | Weld SE | 5.1.2.Final |
 | JSON | Jackson + JavaTimeModule | 2.16.x |
+| データベース | PostgreSQL | 16 |
+| JDBC Driver | PostgreSQL JDBC | 42.7.3 |
+| コネクションプール | HikariCP | 5.1.0 |
 | テスト | JUnit 5 | 5.10.2 |
 | 結合テスト | weld-junit5 | 4.0.2.Final |
 | E2Eテスト | REST Assured | 5.4.0 |
@@ -53,22 +62,31 @@ src/main/java/com/example/library/
 │   ├── BookService.java
 │   ├── MemberService.java
 │   └── LoanService.java
-├── infrastructure/repository/        # InMemory リポジトリ実装
-│   ├── InMemoryBookRepository.java
-│   ├── InMemoryMemberRepository.java
-│   └── InMemoryLoanRepository.java
+├── infrastructure/
+│   ├── database/
+│   │   └── DataSourceProducer.java   # DataSource生成・スキーマ初期化 (HikariCP)
+│   └── repository/                   # JDBC リポジトリ実装
+│       ├── JdbcBookRepository.java
+│       ├── JdbcMemberRepository.java
+│       └── JdbcLoanRepository.java
 └── resource/                         # JAX-RS リソース
     ├── BookResource.java             # /api/books
     ├── MemberResource.java           # /api/members
     ├── LoanResource.java             # /api/loans
     ├── JacksonConfig.java            # ObjectMapper 設定 (JavaTimeModule)
     └── ExceptionMappers.java         # 例外→HTTPステータス変換
+
+src/main/resources/
+├── META-INF/
+│   └── beans.xml                     # CDI設定
+└── schema.sql                        # PostgreSQL スキーマ定義
 ```
 
 **設計ポイント:**
 - ドメインロジックはPOJO（`LendingPolicy`、`Book`、`Loan`等）に隔離
 - Resource → ApplicationService → Domain の層構造
-- Repository インターフェースで永続化を抽象化（実装は InMemory）
+- Repository インターフェースで永続化を抽象化（実装は JDBC + PostgreSQL）
+- DataSourceProducerが起動時にschema.sqlを実行してテーブルを自動作成
 
 ---
 
@@ -79,16 +97,56 @@ src/main/java/com/example/library/
 | **ドメイン単体** | `LendingPolicyTest` | 11 | 貸出上限・期間・借用可否の検証 |
 | | `BookTest` | 5 | 貸出状態の変更・二重貸出エラー |
 | | `MemberTest` | 2 | 会員の生成 |
-| **結合 (Weld-Testing)** | `BookServiceTest` | 6 | 書籍CRUD操作 |
-| | `MemberServiceTest` | 7 | 会員CRUD操作 |
-| | `LoanServiceTest` | 11 | 貸出・返却・上限超えエラー |
-| **E2E (REST Assured)** | `BookResourceTest` | 5 | 書籍REST API |
-| | `MemberResourceTest` | 6 | 会員REST API |
-| | `LoanResourceTest` | 4 | 貸出・返却フロー |
+| **結合 (Weld-Testing + PostgreSQL)** | `BookServiceTest` | 6 | 書籍CRUD操作（実DB使用） |
+| | `MemberServiceTest` | 7 | 会員CRUD操作（実DB使用） |
+| | `LoanServiceTest` | 11 | 貸出・返却・上限超えエラー（実DB使用） |
+| **E2E (REST Assured + PostgreSQL)** | `BookResourceTest` | 5 | 書籍REST API（実DB使用） |
+| | `MemberResourceTest` | 6 | 会員REST API（実DB使用） |
+| | `LoanResourceTest` | 4 | 貸出・返却フロー（実DB使用） |
 | | **合計** | | **57件** |
 
+**テスト戦略:**
 - テストスタイル: 古典学派（モック不使用）
 - テストピラミッド: ドメイン単体テスト → Weld-Testing結合テスト → REST Assured E2Eテスト
+- データ永続化: Application層とResource層のテストは実際のPostgreSQLを使用
+- テスト独立性: 各テストメソッドは`@BeforeEach`でデータベースをクリーンアップし、独立して実行可能
+- 実行順序: テストは順序に依存せず、ランダム順序でも実行可能
+
+---
+
+## 環境要件
+
+このプロジェクトを実行するには以下の環境が必要です：
+
+### 必須環境
+
+- **Java 21+**
+- **Maven 3.9+**
+- **PostgreSQL 16+**
+
+### PostgreSQL接続設定
+
+アプリケーションは以下の環境変数でPostgreSQLに接続します（デフォルト値）：
+
+| 環境変数 | デフォルト値 | 説明 |
+|---------|------------|------|
+| `DATABASE_URL` | `jdbc:postgresql://localhost:5432/library` | JDBC接続URL |
+| `DATABASE_USER` | `library` | データベースユーザー名 |
+| `DATABASE_PASSWORD` | `library` | データベースパスワード |
+
+### PostgreSQLセットアップ
+
+```bash
+# PostgreSQLにログイン
+psql -U postgres
+
+# データベースとユーザーを作成
+CREATE DATABASE library;
+CREATE USER library WITH PASSWORD 'library';
+GRANT ALL PRIVILEGES ON DATABASE library TO library;
+```
+
+または、**Dev Container**（推奨）を使用すると、PostgreSQLを含む環境が自動的にセットアップされます。
 
 ---
 
@@ -155,7 +213,29 @@ curl -s -X POST http://localhost:8080/api/loans/1/return \
 curl -s http://localhost:8080/api/books | jq .
 ```
 
-### 4. アプリケーションの停止
+### 4. データベースの確認（オプション）
+
+PostgreSQLに直接接続してデータを確認できます：
+
+```bash
+# PostgreSQLに接続（Dev Container環境ではホストは 'db'）
+PGPASSWORD=library psql -h db -U library -d library
+
+# テーブル一覧を表示
+\dt
+
+# データを確認
+SELECT * FROM books;
+SELECT * FROM members;
+SELECT * FROM loans;
+
+# 終了
+\q
+```
+
+**注意:** Dev Container以外の環境（ローカルPostgreSQL）では `-h localhost` を使用してください。
+
+### 5. アプリケーションの停止
 
 起動中のターミナルで Enter キーを押すと停止します。
 
