@@ -199,6 +199,7 @@ export default function LoansPage() {
                 <th>貸出日</th>
                 <th>返却期限</th>
                 <th>返却日</th>
+                <th>延滞料金</th>
               </tr>
             </thead>
             <tbody>
@@ -210,6 +211,7 @@ export default function LoansPage() {
                   <td>{loan.loanDate}</td>
                   <td>{loan.dueDate}</td>
                   <td>{loan.returnDate}</td>
+                  <td>{loan.overdueFee}円</td>
                 </tr>
               ))}
             </tbody>

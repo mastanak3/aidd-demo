@@ -10,6 +10,7 @@ public class Loan {
     private LocalDate loanDate;
     private LocalDate dueDate;
     private LocalDate returnDate;
+    private int overdueFee;
 
     public Loan() {
     }
@@ -78,5 +79,13 @@ public class Loan {
 
     public void setReturnDate(LocalDate returnDate) {
         this.returnDate = returnDate;
+    }
+
+    public int getOverdueFee() {
+        return overdueFee;
+    }
+
+    public void setOverdueFee(int overdueFee) {
+        this.overdueFee = overdueFee;
     }
 }
