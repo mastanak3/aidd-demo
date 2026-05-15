@@ -17,6 +17,7 @@
         <weld.version>5.1.2.Final</weld.version>
         <junit.version>5.10.2</junit.version>
         <surefire.forkCount>1</surefire.forkCount>
+        <surefire.excludedGroups>e2e</surefire.excludedGroups>
     </properties>
 
     <dependencies>
@@ -100,6 +101,7 @@
                 <version>3.2.5</version>
                 <configuration>
                     <forkCount>${surefire.forkCount}</forkCount>
+                    <excludedGroups>${surefire.excludedGroups}</excludedGroups>
                 </configuration>
             </plugin>
             <plugin>
@@ -129,6 +131,7 @@
             <id>ci</id>
             <properties>
                 <surefire.forkCount>4</surefire.forkCount>
+                <surefire.excludedGroups></surefire.excludedGroups>
             </properties>
             <build>
                 <plugins>
