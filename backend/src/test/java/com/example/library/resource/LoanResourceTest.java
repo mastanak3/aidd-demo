@@ -2,6 +2,7 @@ package com.example.library.resource;
 
 import com.example.library.App;
 import com.example.library.TestDatabaseCleaner;
+import org.junit.jupiter.api.Tag;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import org.glassfish.grizzly.http.server.HttpServer;
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.*;
 import static io.restassured.RestAssured.*;
 import static org.hamcrest.Matchers.*;
 
+@Tag("e2e")
 class LoanResourceTest {
 
     private static final int PORT = 18083;
