@@ -45,9 +45,17 @@ public class App {
 
         HttpServer server = startServer(container);
 
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            server.shutdownNow();
+            weld.shutdown();
+        }));
+
         System.out.println("Library API started at " + BASE_URI);
         System.out.println("Press Enter to stop...");
-        System.in.read();
+
+        if (System.in.read() == -1) {
+            Thread.currentThread().join();
+        }
 
         server.shutdown();
         weld.shutdown();
