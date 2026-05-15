@@ -16,6 +16,7 @@
         <jersey.version>3.1.5</jersey.version>
         <weld.version>5.1.2.Final</weld.version>
         <junit.version>5.10.2</junit.version>
+        <surefire.forkCount>1</surefire.forkCount>
     </properties>
 
     <dependencies>
@@ -97,6 +98,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.2.5</version>
+                <configuration>
+                    <forkCount>${surefire.forkCount}</forkCount>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.jacoco</groupId>
@@ -119,4 +123,32 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>ci</id>
+            <properties>
+                <surefire.forkCount>4</surefire.forkCount>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <parallel>all</parallel>
+                            <threadCount>4</threadCount>
+                            <properties>
+                                <configurationParameters>
+                                    junit.jupiter.execution.parallel.enabled=true
+                                    junit.jupiter.execution.parallel.mode.default=concurrent
+                                    junit.jupiter.execution.parallel.mode.classes.default=concurrent
+                                </configurationParameters>
+                            </properties>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
