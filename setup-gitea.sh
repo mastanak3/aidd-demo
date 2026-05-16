@@ -7,7 +7,10 @@ ADMIN_PASS="password123"
 ADMIN_EMAIL="admin@example.com"
 REPO_NAME="aidd-demo"
 RUNNER_TOKEN="workshop-runner-token-2024"
+
+GITEA_VERSION="1.23.0"
 RUNNER_VERSION="0.2.12"
+GITEA_DIR="${HOME}/.gitea"
 RUNNER_DIR="${HOME}/.act_runner"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MAX_WAIT=120
@@ -16,14 +19,63 @@ echo "=== Gitea CI Setup ==="
 echo ""
 
 # --------------------------------------------------
-# Step 1: Wait for Gitea (with timeout)
+# Step 1: Download and start Gitea
 # --------------------------------------------------
-echo "[1/7] Waiting for Gitea to be ready (timeout: ${MAX_WAIT}s)..."
+echo "[1/7] Setting up Gitea server..."
+mkdir -p "${GITEA_DIR}/data" "${GITEA_DIR}/custom/conf" "${GITEA_DIR}/repositories" "${GITEA_DIR}/log"
+
+GITEA_BIN="${GITEA_DIR}/gitea"
+if [ ! -f "${GITEA_BIN}" ]; then
+  echo "  Downloading Gitea v${GITEA_VERSION}..."
+  curl -sL "https://dl.gitea.com/gitea/${GITEA_VERSION}/gitea-${GITEA_VERSION}-linux-amd64" \
+    -o "${GITEA_BIN}"
+  chmod +x "${GITEA_BIN}"
+  echo "  Downloaded."
+else
+  echo "  Gitea binary already exists."
+fi
+
+cat > "${GITEA_DIR}/custom/conf/app.ini" << INIEOF
+[server]
+HTTP_PORT = 3000
+HTTP_ADDR = 0.0.0.0
+ROOT_URL = http://localhost:3000/
+
+[database]
+DB_TYPE = sqlite3
+PATH = ${GITEA_DIR}/data/gitea.db
+
+[repository]
+ROOT = ${GITEA_DIR}/repositories
+
+[lfs]
+PATH = ${GITEA_DIR}/data/lfs
+
+[log]
+ROOT_PATH = ${GITEA_DIR}/log
+
+[security]
+INSTALL_LOCK = true
+
+[actions]
+ENABLED = true
+INIEOF
+
+if pgrep -f "gitea.*web" > /dev/null 2>&1; then
+  echo "  Gitea already running."
+else
+  echo "  Starting Gitea..."
+  cd "${GITEA_DIR}"
+  GITEA_WORK_DIR="${GITEA_DIR}" nohup "${GITEA_BIN}" web -c "${GITEA_DIR}/custom/conf/app.ini" > "${GITEA_DIR}/log/gitea.log" 2>&1 &
+  cd "${PROJECT_DIR}"
+fi
+
+echo "  Waiting for Gitea to be ready (timeout: ${MAX_WAIT}s)..."
 ELAPSED=0
 until curl -sf "${GITEA_URL}/api/v1/version" > /dev/null 2>&1; do
   if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
-    echo "  ERROR: Gitea did not start within ${MAX_WAIT}s. Run this script manually later:"
-    echo "    bash ${PROJECT_DIR}/setup-gitea.sh"
+    echo "  ERROR: Gitea did not start within ${MAX_WAIT}s."
+    echo "  Check logs: ${GITEA_DIR}/log/gitea.log"
     exit 1
   fi
   sleep 3
@@ -32,44 +84,22 @@ done
 echo "  Gitea is ready."
 
 # --------------------------------------------------
-# Step 2: Initial setup (create admin user)
+# Step 2: Create admin user
 # --------------------------------------------------
-echo "[2/7] Configuring Gitea..."
+echo "[2/7] Creating admin user..."
 if curl -sf "${GITEA_URL}/api/v1/user" -u "${ADMIN_USER}:${ADMIN_PASS}" > /dev/null 2>&1; then
-  echo "  Already configured, skipping."
+  echo "  Admin user already exists, skipping."
 else
-  curl -sf "${GITEA_URL}" -X POST \
-    -d "db_type=SQLite3" \
-    -d "db_host=localhost:3306" \
-    -d "db_user=root" \
-    -d "db_passwd=" \
-    -d "db_name=gitea" \
-    -d "ssl_mode=disable" \
-    -d "db_path=/var/lib/gitea/data/gitea.db" \
-    -d "app_name=Gitea" \
-    -d "repo_root_path=/var/lib/gitea/git/repositories" \
-    -d "lfs_root_path=/var/lib/gitea/data/lfs" \
-    -d "run_user=git" \
-    -d "domain=localhost" \
-    -d "ssh_port=22" \
-    -d "http_port=3000" \
-    -d "app_url=${GITEA_URL}/" \
-    -d "log_root_path=/var/lib/gitea/data/log" \
-    -d "admin_name=${ADMIN_USER}" \
-    -d "admin_passwd=${ADMIN_PASS}" \
-    -d "admin_confirm_passwd=${ADMIN_PASS}" \
-    -d "admin_email=${ADMIN_EMAIL}" > /dev/null
-  echo "  Initial setup complete."
-  sleep 3
-  ELAPSED=0
-  until curl -sf "${GITEA_URL}/api/v1/version" > /dev/null 2>&1; do
-    if [ "$ELAPSED" -ge 60 ]; then
-      echo "  ERROR: Gitea did not restart after setup."
-      exit 1
-    fi
-    sleep 3
-    ELAPSED=$((ELAPSED + 3))
-  done
+  cd "${GITEA_DIR}"
+  "${GITEA_BIN}" admin user create \
+    --username "${ADMIN_USER}" \
+    --password "${ADMIN_PASS}" \
+    --email "${ADMIN_EMAIL}" \
+    --admin \
+    --must-change-password=false \
+    -c "${GITEA_DIR}/custom/conf/app.ini" 2>/dev/null
+  cd "${PROJECT_DIR}"
+  echo "  Admin user created."
 fi
 
 # --------------------------------------------------
