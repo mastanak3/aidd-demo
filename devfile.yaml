@@ -28,12 +28,12 @@ components:
 
   - name: postgresql
     container:
-      image: bitnami/postgresql:16
+      image: quay.io/sclorg/postgresql-16-c9s
       memoryLimit: 512M
       env:
         - name: POSTGRESQL_DATABASE
           value: library
-        - name: POSTGRESQL_USERNAME
+        - name: POSTGRESQL_USER
           value: library
         - name: POSTGRESQL_PASSWORD
           value: library
