@@ -53,6 +53,10 @@ public class LoanService {
     }
 
     public Loan returnBook(Long loanId) {
+        return returnBook(loanId, false);
+    }
+
+    public Loan returnBook(Long loanId, boolean isBookPostReturn) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("貸出記録が見つかりません: ID=" + loanId));
 
@@ -63,6 +67,10 @@ public class LoanService {
                 .orElseThrow(() -> new IllegalStateException("会員が見つかりません: ID=" + loan.getMemberId()));
 
         LocalDate returnDate = LocalDate.now();
+        if (isBookPostReturn) {
+            returnDate = returnDate.minusDays(1);
+        }
+
         loan.returnBook(returnDate);
         book.returnBook();
 
