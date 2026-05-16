@@ -43,7 +43,7 @@ components:
 
   - name: gitea
     container:
-      image: gitea/gitea:1.23
+      image: gitea/gitea:1.23-rootless
       memoryLimit: 1G
       endpoints:
         - name: gitea-web
@@ -63,7 +63,7 @@ components:
           value: "workshop-runner-token-2024"
       volumeMounts:
         - name: gitea-data
-          path: /data
+          path: /var/lib/gitea
 
 commands:
   - id: install-claude
