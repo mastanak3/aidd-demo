@@ -81,4 +81,3 @@ commands:
 events:
   postStart:
     - install-claude
-    - setup-gitea
