@@ -1,17 +1,47 @@
-# 課題4: 貸出ライフサイクルの統合テスト作成 - 講師ガイド
+# 課題4: 貸出更新機能の実装と統合テスト - 講師ガイド
 
 ## ゴール
 
-AIが生成した「効率的だが壊れやすい」テストを体験し、テストケースの独立性（F.I.R.S.T原則のI）の重要性を学ぶ。
+PBI実装 → AIによるテスト生成という実践的な流れの中で、AIが生成した「効率的だが壊れやすい」テストを体験し、テストケースの独立性（F.I.R.S.T原則のI）の重要性を学ぶ。
 
-## 構成（55分）
+## 構成（60分）
 
-1. **ステップ1**: AIで統合テストを生成（15分）
-2. **ステップ2**: ローカルテストの確認（5分）- `mvn test` で全テスト成功
-3. **ステップ3**: CI環境でのテスト実行・調査・修正（25分）- `mvn test -Pci` で失敗
-4. **ステップ4**: 振り返り（10分）
+1. **ステップ1**: PBI実装（10分）- 貸出更新機能をAIで実装
+2. **ステップ2**: テスト生成（10分）- AIで統合テストを生成
+3. **ステップ3**: ローカルテストの確認（5分）- `mvn test` で全テスト成功
+4. **ステップ4**: CI環境でのテスト実行・調査・修正（25分）- `mvn test -Pci` で失敗
+5. **ステップ5**: 振り返り（10分）
 
-## 仕組み：AIが反パターンを生成する理由
+## ステップ1: AIが実装する想定コード
+
+### Loan.java への追加
+
+```java
+public void renew(LocalDate newDueDate) {
+    if (returnDate != null) {
+        throw new IllegalStateException("返却済みの貸出は更新できません");
+    }
+    this.dueDate = newDueDate;
+}
+```
+
+### LoanService.java への追加
+
+```java
+public Loan renewLoan(Long loanId) {
+    Loan loan = loanRepository.findById(loanId)
+            .orElseThrow(() -> new IllegalArgumentException("貸出が見つかりません: ID=" + loanId));
+    Member member = memberRepository.findById(loan.getMemberId())
+            .orElseThrow(() -> new IllegalArgumentException("会員が見つかりません: ID=" + loan.getMemberId()));
+    LocalDate newDueDate = lendingPolicy.calculateDueDate(member.getMemberType(), LocalDate.now());
+    loan.renew(newDueDate);
+    return loanRepository.save(loan);
+}
+```
+
+> **ポイント:** 実装自体はシンプルで、既存テストを壊さない。ステップ1は安心感を持って完了できる。
+
+## ステップ2: AIが反パターンを生成する仕組み
 
 ### 誘導プロンプトのポイント
 
@@ -36,6 +66,7 @@ class LoanLifecycleIntegrationTest {
     private static Long memberId;    // ← static共有
     private static Long bookId;
     private static Long loanId;
+    private static LocalDate originalDueDate;
 
     @BeforeEach
     void setUp() {
@@ -52,24 +83,26 @@ class LoanLifecycleIntegrationTest {
     void 書籍を貸出できる() {
         Loan loan = loanService.borrowBook(memberId, bookId);
         // ... assertions ...
-        loanId = loan.getId();        // ← 後続テストのためにstatic保存
+        loanId = loan.getId();              // ← 後続テストのためにstatic保存
+        originalDueDate = loan.getDueDate(); // ← 後続テストのためにstatic保存
     }
 
     @Test @Order(2)
-    void 貸出中の書籍は利用不可になる() {
+    void 貸出を更新して返却期限が延長される() {
+        Loan renewed = loanService.renewLoan(loanId);  // ← @Order(1)で設定されたloanIdに依存
+        assertTrue(renewed.getDueDate().isAfter(originalDueDate));  // ← @Order(1)で設定された値に依存
+    }
+
+    @Test @Order(3)
+    void 更新後も書籍は貸出不可のまま() {
         Book found = bookService.findById(bookId);  // ← @Order(1)の副作用に依存
         assertFalse(found.isAvailable());
     }
 
-    @Test @Order(3)
-    void 書籍を返却できる() {
-        Loan returned = loanService.returnBook(loanId);  // ← @Order(1)で設定されたloanIdに依存
-        // ... assertions ...
-    }
-
     @Test @Order(4)
-    void 返却後は書籍が利用可能になる() {
-        Book found = bookService.findById(bookId);  // ← @Order(3)の副作用に依存
+    void 書籍を返却して状態が復帰する() {
+        Loan returned = loanService.returnBook(loanId);  // ← @Order(1)で設定されたloanIdに依存
+        Book found = bookService.findById(bookId);
         assertTrue(found.isAvailable());
     }
 }
@@ -80,7 +113,7 @@ class LoanLifecycleIntegrationTest {
 ローカル環境（`mvn test`、`forkCount=1`）では:
 - テストクラスが1つずつ順番に実行される
 - メソッドは`@Order`順に実行される
-- `@Order(1)`でデータ作成 → `@Order(2)`で状態確認 → `@Order(3)`で返却 → `@Order(4)`で確認
+- `@Order(1)`で貸出 → `@Order(2)`で更新 → `@Order(3)`で状態確認 → `@Order(4)`で返却
 - 他のテストクラスの`cleanAll()`は、このクラスの全テスト完了後に実行される
 - 結果: **全テスト成功**
 
@@ -95,15 +128,18 @@ CI環境（`mvn test -Pci`、`forkCount=4` + JUnit 5並列実行）では:
 
 **原因2: メソッド並列実行（JUnit 5 parallel）**
 - `@Order`順にメソッドが開始されるが、並列実行のため完了を待たずに次が開始
-- `@Order(3)`の`returnBook(loanId)`が実行される時点で`loanId`がまだnull
+- `@Order(2)`の`renewLoan(loanId)`が実行される時点で`loanId`がまだnull
 
 ### 想定されるエラーメッセージ
 
 ```
-LoanLifecycleIntegrationTest.貸出中の書籍は利用不可になる -- ERROR!
+LoanLifecycleIntegrationTest.貸出を更新して返却期限が延長される -- ERROR!
+  java.lang.NullPointerException: Cannot invoke ... because "loanId" is null
+
+LoanLifecycleIntegrationTest.更新後も書籍は貸出不可のまま -- ERROR!
   java.lang.IllegalArgumentException: 書籍が見つかりません: ID=X
 
-LoanLifecycleIntegrationTest.書籍を返却できる -- ERROR!
+LoanLifecycleIntegrationTest.書籍を返却して状態が復帰する -- ERROR!
   java.lang.NullPointerException: Cannot invoke ... because "loanId" is null
 ```
 
@@ -136,22 +172,24 @@ class LoanLifecycleIntegrationTest {
     }
 
     @Test
-    void 貸出中の書籍は利用不可になる() {
-        loanService.borrowBook(member.getId(), book.getId());
+    void 貸出を更新して返却期限が延長される() {
+        Loan loan = loanService.borrowBook(member.getId(), book.getId());
+        LocalDate originalDueDate = loan.getDueDate();
+        Loan renewed = loanService.renewLoan(loan.getId());
+        assertTrue(renewed.getDueDate().isAfter(originalDueDate));
+        assertTrue(renewed.isActive());
+    }
+
+    @Test
+    void 更新後も書籍は貸出不可のまま() {
+        Loan loan = loanService.borrowBook(member.getId(), book.getId());
+        loanService.renewLoan(loan.getId());
         Book found = bookService.findById(book.getId());
         assertFalse(found.isAvailable());
     }
 
     @Test
-    void 書籍を返却できる() {
-        Loan loan = loanService.borrowBook(member.getId(), book.getId());
-        Loan returned = loanService.returnBook(loan.getId());
-        assertNotNull(returned.getReturnDate());
-        assertFalse(returned.isActive());
-    }
-
-    @Test
-    void 返却後は書籍が利用可能になる() {
+    void 書籍を返却して状態が復帰する() {
         Loan loan = loanService.borrowBook(member.getId(), book.getId());
         loanService.returnBook(loan.getId());
         Book found = bookService.findById(book.getId());
@@ -175,15 +213,24 @@ class LoanLifecycleIntegrationTest {
 
 | タイミング | 問いかけ |
 |-----------|---------|
-| ステップ1完了後 | 「AIが生成したテストコードを見てみましょう。何か気になる点はありますか？」 |
-| ステップ2完了後 | 「全テスト通りましたね！このテストは信頼できると思いますか？」 |
-| ステップ3-1実行後 | 「ローカルとCI環境で結果が違いますね。何が違うのでしょう？」（間を取る） |
+| ステップ1完了後 | 「PBI実装は簡単でしたね。既存テストも通っています。次はテストを書きましょう」 |
+| ステップ2完了後 | 「AIが生成したテストコードを見てみましょう。何か気になる点はありますか？」 |
+| ステップ3完了後 | 「全テスト通りましたね！このテストは信頼できると思いますか？」 |
+| ステップ4-1実行後 | 「ローカルとCI環境で結果が違いますね。何が違うのでしょう？」（間を取る） |
 | エラー確認時 | 「エラーメッセージを読んでみましょう。何が起きていますか？」 |
 | CI設定確認時 | 「pom.xmlのciプロファイルを見てみましょう。何が変わっていますか？」 |
 | テストコード再確認 | 「自分が生成したテストの`static`フィールドと`@Order`を見てください。並列実行ではどうなりますか？」 |
 | 修正完了後 | 「修正前と修正後、テストコードの構造がどう変わりましたか？」 |
 
 ### トラブルシューティング
+
+**PBI実装でAIが既存テストを壊した場合**
+
+AIがLoan.javaの既存メソッドを変更してしまうことがあります。
+
+対処法:
+1. `git diff`で変更内容を確認し、既存メソッドへの変更がないか確認
+2. AIに「既存のメソッドは変更せず、新しいメソッドのみ追加してください」と再指示
 
 **AIが正しい独立テストを生成した場合**
 
@@ -213,22 +260,32 @@ class LoanLifecycleIntegrationTest {
 
 ### 振り返りのポイント
 
-1. **AIの生成結果を鵜呑みにしない**
+1. **PBI実装 → テスト生成の流れ**
+   - プロダクトコード実装はAIが適切に対応できた
+   - しかしテスト生成では、プロンプト次第で品質が大きく変わる
+   - 実装と同じAIに依頼しても、テスト設計の品質は保証されない
+
+2. **AIの生成結果を鵜呑みにしない**
    - AIはプロンプトの指示に忠実に従う
    - 「効率化」を求めると、テストの品質を犠牲にしたコードを生成する
    - 生成されたコードの品質を評価するのは開発者の責任
 
-2. **テストの独立性（F.I.R.S.T原則のI: Independent）**
+3. **テストの独立性（F.I.R.S.T原則のI: Independent）**
    - 各テストは他のテストの実行結果に依存してはならない
    - テストの実行順序に依存してはならない
    - 並列実行でもシリアル実行でも同じ結果が得られるべき
 
-3. **Setup/Teardownの重要性**
+4. **Setup/Teardownの重要性**
    - `@BeforeEach`で毎回テストデータを初期化する
    - lazy initializationは並列実行で危険
    - 「効率化」より「信頼性」を優先する
 
 ## キーメッセージ
+
+**PBI実装とテスト生成は別の課題**
+- AIはプロダクトコードの実装を適切に行えることが多い
+- しかしテスト生成では、テスト設計の原則を理解していないと品質の評価ができない
+- プロンプトの書き方次第で、反パターンを忠実に実装する
 
 **AIが生成したテストの落とし穴**
 - AIは「動くテスト」を書けるが、「信頼できるテスト」を書くとは限らない
