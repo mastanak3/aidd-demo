@@ -21,13 +21,29 @@ components:
         - name: ANTHROPIC_VERTEX_REGION
           value: "global"
 
+  - name: postgresql
+    container:
+      image: postgres:16
+      memoryLimit: 512M
+      env:
+        - name: POSTGRES_DB
+          value: library
+        - name: POSTGRES_USER
+          value: library
+        - name: POSTGRES_PASSWORD
+          value: library
+      endpoints:
+        - name: postgres
+          targetPort: 5432
+          exposure: internal
+
   - name: gitea-data
     volume:
       size: 2Gi
 
   - name: gitea
     container:
-      image: quay.io/gpte-devops-automation/gitea:1.19.0
+      image: gitea/gitea:1.23
       memoryLimit: 1G
       endpoints:
         - name: gitea-web
@@ -41,6 +57,10 @@ components:
           value: "3000"
         - name: GITEA__server__HTTP_ADDR
           value: "0.0.0.0"
+        - name: GITEA__actions__ENABLED
+          value: "true"
+        - name: GITEA_RUNNER_REGISTRATION_TOKEN
+          value: "workshop-runner-token-2024"
       volumeMounts:
         - name: gitea-data
           path: /data
@@ -52,6 +72,13 @@ commands:
       commandLine: "npm install -g @anthropic-ai/claude-code"
       workingDir: /projects
 
+  - id: setup-gitea
+    exec:
+      component: tools
+      commandLine: "bash /projects/aidd-demo/setup-gitea.sh"
+      workingDir: /projects/aidd-demo
+
 events:
   postStart:
     - install-claude
+    - setup-gitea
