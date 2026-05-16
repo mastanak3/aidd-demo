@@ -10,16 +10,24 @@ RUNNER_TOKEN="workshop-runner-token-2024"
 RUNNER_VERSION="0.2.12"
 RUNNER_DIR="${HOME}/.act_runner"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
+MAX_WAIT=120
 
 echo "=== Gitea CI Setup ==="
 echo ""
 
 # --------------------------------------------------
-# Step 1: Wait for Gitea
+# Step 1: Wait for Gitea (with timeout)
 # --------------------------------------------------
-echo "[1/7] Waiting for Gitea to be ready..."
+echo "[1/7] Waiting for Gitea to be ready (timeout: ${MAX_WAIT}s)..."
+ELAPSED=0
 until curl -sf "${GITEA_URL}/api/v1/version" > /dev/null 2>&1; do
-  sleep 2
+  if [ "$ELAPSED" -ge "$MAX_WAIT" ]; then
+    echo "  ERROR: Gitea did not start within ${MAX_WAIT}s. Run this script manually later:"
+    echo "    bash ${PROJECT_DIR}/setup-gitea.sh"
+    exit 1
+  fi
+  sleep 3
+  ELAPSED=$((ELAPSED + 3))
 done
 echo "  Gitea is ready."
 
@@ -53,8 +61,14 @@ else
     -d "admin_email=${ADMIN_EMAIL}" > /dev/null
   echo "  Initial setup complete."
   sleep 3
+  ELAPSED=0
   until curl -sf "${GITEA_URL}/api/v1/version" > /dev/null 2>&1; do
-    sleep 2
+    if [ "$ELAPSED" -ge 60 ]; then
+      echo "  ERROR: Gitea did not restart after setup."
+      exit 1
+    fi
+    sleep 3
+    ELAPSED=$((ELAPSED + 3))
   done
 fi
 
