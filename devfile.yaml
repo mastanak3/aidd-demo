@@ -26,21 +26,6 @@ components:
         - name: ANTHROPIC_VERTEX_REGION
           value: "global"
 
-  - name: postgresql
-    container:
-      image: postgres:16
-      memoryLimit: 512M
-      env:
-        - name: POSTGRES_DB
-          value: library
-        - name: POSTGRES_USER
-          value: library
-        - name: POSTGRES_PASSWORD
-          value: library
-      endpoints:
-        - name: postgres
-          targetPort: 5432
-          exposure: internal
 
 commands:
   - id: install-claude
