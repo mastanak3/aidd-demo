@@ -37,10 +37,6 @@ components:
           targetPort: 5432
           exposure: internal
 
-  - name: gitea-data
-    volume:
-      size: 2Gi
-
   - name: gitea
     container:
       image: gitea/gitea:1.23-rootless
@@ -61,9 +57,6 @@ components:
           value: "true"
         - name: GITEA_RUNNER_REGISTRATION_TOKEN
           value: "workshop-runner-token-2024"
-      volumeMounts:
-        - name: gitea-data
-          path: /var/lib/gitea
 
 commands:
   - id: install-claude
