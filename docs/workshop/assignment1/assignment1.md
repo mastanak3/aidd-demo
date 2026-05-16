@@ -68,8 +68,11 @@
 
 > **プロンプト例:**
 > ```
-> 実装した延滞料金計算機能 (`LendingPolicy.java` の `calculateOverdueFee` メソッド) の挙動を検証するため、
-> 以下に記載した仕様についてのテストケースを作成してください。
+> 延滞料金計算機能のテストケースを作成してください。
+> 以下の2つのクラスをテスト対象とします。
+>
+> - `LendingPolicy.java` の `calculateOverdueFee` メソッド（延滞料金の計算ロジック）
+> - `LoanService.java` の `returnBook` メソッド（返却処理とブックポスト返却の制御）
 >
 > **Acceptance Criteria:**
 >
@@ -103,18 +106,18 @@ AIにテストの実行とカバレッジの測定を依頼しましょう。
 
 > **プロンプト例:**
 > ```
-> domainパッケージのテストを実行し、カバレッジも測定してください。
+> domain・applicationパッケージのテストを実行し、カバレッジも測定してください。
 >
-> - テスト: mvn test -Dtest="com.example.library.domain.**"
+> - テスト: mvn test -Dtest="com.example.library.domain.**,com.example.library.application.**"
 > - カバレッジ: mvn test jacoco:report を実行し、target/site/jacoco のレポートから
->   LendingPolicy.javaのカバレッジを報告してください
+>   LendingPolicy.java と LoanService.java のカバレッジを報告してください
 > ```
 
 エラーが出た場合は、そのままAIに調査と修正を依頼してください。すべてのテストがパスするまで繰り返します。
 
 > **チェックポイント:**
 > - テストはすべてパスしましたか？
-> - `LendingPolicy.java` のカバレッジは何%ですか？
+> - `LendingPolicy.java` と `LoanService.java` のカバレッジは何%ですか？
 
 ---
 
@@ -156,7 +159,7 @@ AIにテストの実行とカバレッジの測定を依頼しましょう。
 > ```
 > ブックポスト返却で前日が休館日（月曜日）になるケースを考慮したテストを
 > LoanServiceのテストに追加してください。
-> 例: 火曜日にブックポスト返却した場合、返却日は月曜日（休館日）になります。
+> 例: 火曜日の午前9時前にブックポスト返却した場合、返却日は月曜日（休館日）になります。
 > この場合の延滞料金は正しく計算されますか？
 > ```
 
