@@ -66,7 +66,7 @@ if pgrep -f "gitea.*web" > /dev/null 2>&1; then
 else
   echo "  Starting Gitea..."
   cd "${GITEA_DIR}"
-  GITEA_WORK_DIR="${GITEA_DIR}" nohup "${GITEA_BIN}" web -c "${GITEA_DIR}/custom/conf/app.ini" > "${GITEA_DIR}/log/gitea.log" 2>&1 &
+  GITEA_WORK_DIR="${GITEA_DIR}" GITEA_RUNNER_REGISTRATION_TOKEN="${RUNNER_TOKEN}" nohup "${GITEA_BIN}" web -c "${GITEA_DIR}/custom/conf/app.ini" > "${GITEA_DIR}/log/gitea.log" 2>&1 &
   cd "${PROJECT_DIR}"
 fi
 
@@ -163,11 +163,19 @@ else
 fi
 
 if [ ! -f "${RUNNER_DIR}/.runner" ]; then
+  echo "  Obtaining registration token from API..."
+  REG_TOKEN=$(curl -sf "${GITEA_URL}/api/v1/admin/runners/registration-token" \
+    -X POST \
+    -H "Authorization: token ${API_TOKEN}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token', ''))" 2>/dev/null)
+  if [ -z "$REG_TOKEN" ]; then
+    echo "  ERROR: Failed to obtain registration token."
+    exit 1
+  fi
   echo "  Registering runner..."
   cd "${RUNNER_DIR}"
   "${RUNNER_BIN}" register --no-interactive \
     --instance "${GITEA_URL}" \
-    --token "${RUNNER_TOKEN}" \
+    --token "${REG_TOKEN}" \
     --name "devspaces-runner" \
     --labels "ubuntu-latest:host"
   cd "${PROJECT_DIR}"
