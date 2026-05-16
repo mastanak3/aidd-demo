@@ -12,35 +12,11 @@ GITEA_VERSION="1.23.0"
 RUNNER_VERSION="0.2.12"
 GITEA_DIR="${HOME}/.gitea"
 RUNNER_DIR="${HOME}/.act_runner"
-PG_DIR="${HOME}/.postgresql"
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 MAX_WAIT=120
 
 echo "=== Gitea CI Setup ==="
 echo ""
-
-# --------------------------------------------------
-# Step 0: Start PostgreSQL
-# --------------------------------------------------
-echo "[0/7] Setting up PostgreSQL..."
-if pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
-  echo "  PostgreSQL already running."
-else
-  mkdir -p "${PG_DIR}/data" "${PG_DIR}/log"
-  if [ ! -f "${PG_DIR}/data/PG_VERSION" ]; then
-    echo "  Initializing database..."
-    initdb -D "${PG_DIR}/data" --auth=trust --no-locale --encoding=UTF8 > /dev/null 2>&1
-  fi
-  echo "  Starting PostgreSQL..."
-  pg_ctl -D "${PG_DIR}/data" -l "${PG_DIR}/log/postgresql.log" -o "-p 5432 -k /tmp" start > /dev/null 2>&1
-  sleep 2
-  if ! psql -h localhost -p 5432 -d postgres -c "SELECT 1 FROM pg_roles WHERE rolname='library'" -tA 2>/dev/null | grep -q 1; then
-    createuser -h localhost -p 5432 library 2>/dev/null || true
-    createdb -h localhost -p 5432 -O library library 2>/dev/null || true
-    psql -h localhost -p 5432 -d postgres -c "ALTER USER library PASSWORD 'library';" > /dev/null 2>&1
-  fi
-  echo "  PostgreSQL ready (library/library@localhost:5432/library)."
-fi
 
 # --------------------------------------------------
 # Step 1: Download and start Gitea
