@@ -13,6 +13,11 @@ components:
       image: quay.io/devfile/universal-developer-image:latest
       memoryLimit: 4G
       mountSources: true
+      endpoints:
+        - name: gitea-web
+          targetPort: 3000
+          exposure: public
+          protocol: http
       env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /home/user/gcp-secret/auth.json
@@ -37,27 +42,6 @@ components:
           targetPort: 5432
           exposure: internal
 
-  - name: gitea
-    container:
-      image: gitea/gitea:1.23-rootless
-      memoryLimit: 1G
-      endpoints:
-        - name: gitea-web
-          targetPort: 3000
-          exposure: public
-          protocol: http
-      env:
-        - name: GITEA__database__DB_TYPE
-          value: sqlite3
-        - name: GITEA__server__HTTP_PORT
-          value: "3000"
-        - name: GITEA__server__HTTP_ADDR
-          value: "0.0.0.0"
-        - name: GITEA__actions__ENABLED
-          value: "true"
-        - name: GITEA_RUNNER_REGISTRATION_TOKEN
-          value: "workshop-runner-token-2024"
-
 commands:
   - id: install-claude
     exec:
@@ -74,3 +58,4 @@ commands:
 events:
   postStart:
     - install-claude
+    - setup-gitea
