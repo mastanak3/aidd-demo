@@ -6,7 +6,7 @@ ADMIN_USER="gitea-admin"
 ADMIN_PASS="password123"
 ADMIN_EMAIL="admin@example.com"
 REPO_NAME="aidd-demo"
-RUNNER_TOKEN="workshop-runner-token-2024"
+RUNNER_TOKEN="workshop-runner-token-2024-devspaces"
 
 GITEA_VERSION="1.23.0"
 RUNNER_VERSION="0.2.12"
@@ -163,19 +163,11 @@ else
 fi
 
 if [ ! -f "${RUNNER_DIR}/.runner" ]; then
-  echo "  Obtaining registration token from API..."
-  REG_TOKEN=$(curl -sf "${GITEA_URL}/api/v1/admin/runners/registration-token" \
-    -X POST \
-    -H "Authorization: token ${API_TOKEN}" | python3 -c "import sys,json; print(json.load(sys.stdin).get('token', ''))" 2>/dev/null)
-  if [ -z "$REG_TOKEN" ]; then
-    echo "  ERROR: Failed to obtain registration token."
-    exit 1
-  fi
   echo "  Registering runner..."
   cd "${RUNNER_DIR}"
   "${RUNNER_BIN}" register --no-interactive \
     --instance "${GITEA_URL}" \
-    --token "${REG_TOKEN}" \
+    --token "${RUNNER_TOKEN}" \
     --name "devspaces-runner" \
     --labels "ubuntu-latest:host"
   cd "${PROJECT_DIR}"
