@@ -38,8 +38,8 @@ public class LoanResource {
 
     @POST
     @Path("/{id}/return")
-    public Loan returnBook(@PathParam("id") Long id) {
-        return loanService.returnBook(id);
+    public Loan returnBook(@PathParam("id") Long id, @QueryParam("bookPost") @DefaultValue("false") boolean bookPost) {
+        return loanService.returnBook(id, bookPost);
     }
 
     public record LoanRequest(Long memberId, Long bookId) {

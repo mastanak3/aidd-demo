@@ -27,7 +27,7 @@ public class JdbcLoanRepository implements LoanRepository {
 
     @Override
     public Optional<Loan> findById(Long id) {
-        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date FROM loans WHERE id = ?";
+        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date, overdue_fee FROM loans WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, id);
@@ -44,7 +44,7 @@ public class JdbcLoanRepository implements LoanRepository {
 
     @Override
     public List<Loan> findAll() {
-        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date FROM loans ORDER BY id";
+        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date, overdue_fee FROM loans ORDER BY id";
         List<Loan> loans = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -60,7 +60,7 @@ public class JdbcLoanRepository implements LoanRepository {
 
     @Override
     public List<Loan> findActiveByMemberId(Long memberId) {
-        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date FROM loans WHERE member_id = ? AND return_date IS NULL";
+        String sql = "SELECT id, book_id, member_id, loan_date, due_date, return_date, overdue_fee FROM loans WHERE member_id = ? AND return_date IS NULL";
         List<Loan> loans = new ArrayList<>();
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -77,7 +77,7 @@ public class JdbcLoanRepository implements LoanRepository {
     }
 
     private Loan insert(Loan loan) {
-        String sql = "INSERT INTO loans (book_id, member_id, loan_date, due_date, return_date) VALUES (?, ?, ?, ?, ?) RETURNING id";
+        String sql = "INSERT INTO loans (book_id, member_id, loan_date, due_date, return_date, overdue_fee) VALUES (?, ?, ?, ?, ?, ?) RETURNING id";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, loan.getBookId());
@@ -89,6 +89,7 @@ public class JdbcLoanRepository implements LoanRepository {
             } else {
                 ps.setNull(5, Types.DATE);
             }
+            ps.setInt(6, loan.getOverdueFee());
             try (ResultSet rs = ps.executeQuery()) {
                 rs.next();
                 loan.setId(rs.getLong(1));
@@ -100,7 +101,7 @@ public class JdbcLoanRepository implements LoanRepository {
     }
 
     private Loan update(Loan loan) {
-        String sql = "UPDATE loans SET book_id = ?, member_id = ?, loan_date = ?, due_date = ?, return_date = ? WHERE id = ?";
+        String sql = "UPDATE loans SET book_id = ?, member_id = ?, loan_date = ?, due_date = ?, return_date = ?, overdue_fee = ? WHERE id = ?";
         try (Connection conn = dataSource.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setLong(1, loan.getBookId());
@@ -112,7 +113,8 @@ public class JdbcLoanRepository implements LoanRepository {
             } else {
                 ps.setNull(5, Types.DATE);
             }
-            ps.setLong(6, loan.getId());
+            ps.setInt(6, loan.getOverdueFee());
+            ps.setLong(7, loan.getId());
             ps.executeUpdate();
         } catch (SQLException e) {
             throw new RuntimeException(e);
@@ -131,6 +133,7 @@ public class JdbcLoanRepository implements LoanRepository {
         if (returnDate != null) {
             loan.setReturnDate(returnDate.toLocalDate());
         }
+        loan.setOverdueFee(rs.getInt("overdue_fee"));
         return loan;
     }
 }

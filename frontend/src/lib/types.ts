@@ -34,6 +34,7 @@ export interface Loan {
   loanDate: string;
   dueDate: string;
   returnDate: string | null;
+  overdueFee: number;
 }
 
 export interface LoanRequest {
