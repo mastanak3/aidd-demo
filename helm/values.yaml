@@ -37,7 +37,7 @@ isbn_service:
   namespace: isbn-service
   build:
     gitUri: "https://github.com/mastanak3/aidd-demo.git"
-    gitRef: "main"
+    gitRef: "prob3"
     contextDir: "isbn-service"
   port: 8080
   replicas: 1
