@@ -53,14 +53,29 @@ public class LoanService {
     }
 
     public Loan returnBook(Long loanId) {
+        return returnBook(loanId, false);
+    }
+
+    public Loan returnBook(Long loanId, boolean isBookPostReturn) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new IllegalArgumentException("貸出記録が見つかりません: ID=" + loanId));
 
         Book book = bookRepository.findById(loan.getBookId())
                 .orElseThrow(() -> new IllegalStateException("書籍が見つかりません: ID=" + loan.getBookId()));
 
-        loan.returnBook(LocalDate.now());
+        Member member = memberRepository.findById(loan.getMemberId())
+                .orElseThrow(() -> new IllegalStateException("会員が見つかりません: ID=" + loan.getMemberId()));
+
+        LocalDate returnDate = LocalDate.now();
+        if (isBookPostReturn) {
+            returnDate = returnDate.minusDays(1);
+        }
+
+        loan.returnBook(returnDate);
         book.returnBook();
+
+        int overdueFee = LendingPolicy.calculateOverdueFee(member.getMemberType(), loan.getDueDate(), returnDate);
+        loan.setOverdueFee(overdueFee);
 
         bookRepository.save(book);
         return loanRepository.save(loan);

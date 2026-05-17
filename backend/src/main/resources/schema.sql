@@ -19,5 +19,6 @@ CREATE TABLE IF NOT EXISTS loans (
     member_id BIGINT NOT NULL REFERENCES members(id),
     loan_date DATE NOT NULL,
     due_date DATE NOT NULL,
-    return_date DATE
+    return_date DATE,
+    overdue_fee INTEGER NOT NULL DEFAULT 0
 );
