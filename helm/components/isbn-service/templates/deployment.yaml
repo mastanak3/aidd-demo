@@ -1,0 +1,40 @@
+{{- if .Values.isbn_service.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.isbn_service.name }}
+  namespace: {{ .Values.isbn_service.namespace }}
+  labels:
+    app: {{ .Values.isbn_service.name }}
+  annotations:
+    image.openshift.io/triggers: |
+      [{"from":{"kind":"ImageStreamTag","name":"{{ .Values.isbn_service.name }}:latest"},"fieldPath":"spec.template.spec.containers[?(@.name==\"{{ .Values.isbn_service.name }}\")].image"}]
+spec:
+  replicas: {{ .Values.isbn_service.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.isbn_service.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.isbn_service.name }}
+    spec:
+      containers:
+        - name: {{ .Values.isbn_service.name }}
+          image: " "
+          ports:
+            - containerPort: {{ .Values.isbn_service.port }}
+              protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.isbn_service.port }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: {{ .Values.isbn_service.port }}
+            initialDelaySeconds: 10
+            periodSeconds: 30
+{{- end }}
