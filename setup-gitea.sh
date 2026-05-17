@@ -2,6 +2,20 @@
 set -euo pipefail
 
 GITEA_URL="http://localhost:3000"
+
+# Detect external Route URL for ROOT_URL (OpenShift Dev Spaces)
+GITEA_EXTERNAL_URL=""
+if command -v kubectl &>/dev/null; then
+  WORKSPACE_ID="${HOSTNAME%%-*}"
+  ROUTE_HOST=$(kubectl get routes -n "${DEVWORKSPACE_NAMESPACE:-admin-devspaces}" \
+    -l "controller.devfile.io/devworkspace_id=${DEVWORKSPACE_ID:-${WORKSPACE_ID}}" \
+    -o jsonpath='{range .items[*]}{.metadata.annotations.che\.routing\.controller\.devfile\.io/endpoint-name}{"\t"}{.spec.host}{"\t"}{.spec.tls.termination}{"\n"}{end}' 2>/dev/null \
+    | awk -F'\t' '/^gitea-web\t/ {if ($3 != "") print "https://"$2; else print "http://"$2}' \
+    | head -1)
+  if [ -n "$ROUTE_HOST" ]; then
+    GITEA_EXTERNAL_URL="${ROUTE_HOST}"
+  fi
+fi
 ADMIN_USER="gitea-admin"
 ADMIN_PASS="password123"
 ADMIN_EMAIL="admin@example.com"
@@ -35,11 +49,12 @@ else
   echo "  Gitea binary already exists."
 fi
 
+GITEA_ROOT_URL="${GITEA_EXTERNAL_URL:-http://localhost:3000}"
 cat > "${GITEA_DIR}/custom/conf/app.ini" << INIEOF
 [server]
 HTTP_PORT = 3000
 HTTP_ADDR = 0.0.0.0
-ROOT_URL = http://localhost:3000/
+ROOT_URL = ${GITEA_ROOT_URL}/
 
 [database]
 DB_TYPE = sqlite3
@@ -209,14 +224,55 @@ fi
 git push -u origin main 2>&1 || git push -u origin HEAD:main 2>&1
 echo "  Code pushed."
 
+# --------------------------------------------------
+# Step 8: Ensure TLS Route for external access
+# --------------------------------------------------
+if [ -n "$GITEA_EXTERNAL_URL" ] && command -v kubectl &>/dev/null; then
+  echo "[8/8] Ensuring TLS Route for Gitea Web UI..."
+  ROUTE_NAME=$(kubectl get routes -n "${DEVWORKSPACE_NAMESPACE:-admin-devspaces}" \
+    -l "controller.devfile.io/devworkspace_id=${DEVWORKSPACE_ID:-${WORKSPACE_ID}}" \
+    -o jsonpath='{range .items[*]}{.metadata.annotations.che\.routing\.controller\.devfile\.io/endpoint-name}{"\t"}{.metadata.name}{"\t"}{.spec.tls.termination}{"\n"}{end}' 2>/dev/null \
+    | awk -F'\t' '/^gitea-web\t/ && $3 == "" {print $2}' | head -1)
+  if [ -n "$ROUTE_NAME" ]; then
+    ROUTE_HOST=$(kubectl get route "$ROUTE_NAME" -n "${DEVWORKSPACE_NAMESPACE:-admin-devspaces}" -o jsonpath='{.spec.host}' 2>/dev/null)
+    kubectl apply -f - <<ROUTEEOF 2>/dev/null || true
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: gitea-web-tls
+  namespace: ${DEVWORKSPACE_NAMESPACE:-admin-devspaces}
+  labels:
+    app: gitea-custom
+spec:
+  host: gitea-web.${ROUTE_HOST#*.}
+  port:
+    targetPort: 3000
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  to:
+    kind: Service
+    name: $(kubectl get route "$ROUTE_NAME" -n "${DEVWORKSPACE_NAMESPACE:-admin-devspaces}" -o jsonpath='{.spec.to.name}' 2>/dev/null)
+    weight: 100
+  wildcardPolicy: None
+ROUTEEOF
+    GITEA_EXTERNAL_URL="https://gitea-web.${ROUTE_HOST#*.}"
+    sed -i "s|^ROOT_URL = .*|ROOT_URL = ${GITEA_EXTERNAL_URL}/|" "${GITEA_DIR}/custom/conf/app.ini"
+    echo "  TLS Route created: ${GITEA_EXTERNAL_URL}"
+  else
+    echo "  Route already has TLS, skipping."
+  fi
+fi
+
+DISPLAY_URL="${GITEA_EXTERNAL_URL:-${GITEA_URL}}"
 echo ""
 echo "========================================"
 echo "  Gitea CI Setup Complete!"
 echo "========================================"
 echo ""
-echo "  Gitea:      ${GITEA_URL}"
-echo "  Repository: ${GITEA_URL}/${ADMIN_USER}/${REPO_NAME}"
-echo "  Actions:    ${GITEA_URL}/${ADMIN_USER}/${REPO_NAME}/actions"
+echo "  Gitea:      ${DISPLAY_URL}"
+echo "  Repository: ${DISPLAY_URL}/${ADMIN_USER}/${REPO_NAME}"
+echo "  Actions:    ${DISPLAY_URL}/${ADMIN_USER}/${REPO_NAME}/actions"
 echo "  User:       ${ADMIN_USER} / ${ADMIN_PASS}"
 echo ""
 echo "  Push changes to trigger CI:"
