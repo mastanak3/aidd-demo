@@ -29,6 +29,22 @@ components:
     allNamespaces: true  # DevWorkspace requires AllNamespaces mode
 
 # ============================================================
+# ISBN Lookup Service - External service for workshop problem 3
+# ============================================================
+isbn_service:
+  enabled: true
+  name: isbn-service
+  namespace: isbn-service
+  build:
+    gitUri: "https://github.com/mastanak3/aidd-demo.git"
+    gitRef: "prob3"
+    contextDir: "isbn-service"
+  port: 8080
+  replicas: 1
+  route:
+    enabled: true
+
+# ============================================================
 # Dev Space Instance - Created after operators are installed
 # ============================================================
 devspaces_instance:

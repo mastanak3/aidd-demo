@@ -1,0 +1,16 @@
+{{- if .Values.isbn_service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.isbn_service.name }}
+  namespace: {{ .Values.isbn_service.namespace }}
+  labels:
+    app: {{ .Values.isbn_service.name }}
+spec:
+  selector:
+    app: {{ .Values.isbn_service.name }}
+  ports:
+    - port: {{ .Values.isbn_service.port }}
+      targetPort: {{ .Values.isbn_service.port }}
+      protocol: TCP
+{{- end }}

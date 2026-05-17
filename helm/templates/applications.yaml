@@ -45,6 +45,48 @@ spec:
 {{- end }}
 
 
+{{- if .Values.isbn_service.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-isbn-service
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "field-content"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/isbn-service
+    helm:
+      valuesObject:
+        isbn_service:
+          enabled: {{ .Values.isbn_service.enabled }}
+          name: {{ .Values.isbn_service.name }}
+          namespace: {{ .Values.isbn_service.namespace }}
+          build:
+            gitUri: {{ .Values.isbn_service.build.gitUri }}
+            gitRef: {{ .Values.isbn_service.build.gitRef }}
+            contextDir: {{ .Values.isbn_service.build.contextDir }}
+          port: {{ .Values.isbn_service.port }}
+          replicas: {{ .Values.isbn_service.replicas }}
+          route:
+            enabled: {{ .Values.isbn_service.route.enabled }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.isbn_service.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+
 {{- if .Values.devspaces_instance.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1
