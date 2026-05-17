@@ -17,6 +17,7 @@ components:
         - name: gitea-web
           targetPort: 3000
           exposure: public
+          secure: true
       env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /home/user/gcp-secret/auth.json
