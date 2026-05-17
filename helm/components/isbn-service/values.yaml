@@ -1,0 +1,12 @@
+isbn_service:
+  enabled: true
+  name: isbn-service
+  namespace: isbn-service
+  build:
+    gitUri: "https://github.com/mastanak3/aidd-demo.git"
+    gitRef: "main"
+    contextDir: "isbn-service"
+  port: 8080
+  replicas: 1
+  route:
+    enabled: true

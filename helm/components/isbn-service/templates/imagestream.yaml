@@ -1,0 +1,9 @@
+{{- if .Values.isbn_service.enabled }}
+apiVersion: image.openshift.io/v1
+kind: ImageStream
+metadata:
+  name: {{ .Values.isbn_service.name }}
+  namespace: {{ .Values.isbn_service.namespace }}
+  labels:
+    app: {{ .Values.isbn_service.name }}
+{{- end }}

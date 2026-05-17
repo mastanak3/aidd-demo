@@ -1,0 +1,25 @@
+{{- if .Values.isbn_service.enabled }}
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.isbn_service.name }}
+  namespace: {{ .Values.isbn_service.namespace }}
+  labels:
+    app: {{ .Values.isbn_service.name }}
+spec:
+  source:
+    type: Git
+    git:
+      uri: {{ .Values.isbn_service.build.gitUri }}
+      ref: {{ .Values.isbn_service.build.gitRef }}
+    contextDir: {{ .Values.isbn_service.build.contextDir }}
+  strategy:
+    type: Docker
+    dockerStrategy: {}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "{{ .Values.isbn_service.name }}:latest"
+  triggers:
+    - type: ConfigChange
+{{- end }}
