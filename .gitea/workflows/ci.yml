@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+env:
+  JAVA_HOME: /home/tooling/.sdkman/candidates/java/21.0.5-tem
+  PATH: /home/tooling/.sdkman/candidates/java/21.0.5-tem/bin:/home/tooling/.sdkman/candidates/maven/current/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
 jobs:
   unit-tests:
     name: Backend Unit Tests
