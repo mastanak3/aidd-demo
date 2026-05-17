@@ -1,9 +1,10 @@
 package com.example.library.application;
 
 import com.example.library.TestDatabaseCleaner;
+import com.example.library.TestEntityManagerProducer;
+import com.example.library.TestTransactionInterceptor;
 import com.example.library.domain.model.Book;
-import com.example.library.infrastructure.database.DataSourceProducer;
-import com.example.library.infrastructure.repository.JdbcBookRepository;
+import com.example.library.infrastructure.repository.JpaBookRepository;
 import org.jboss.weld.junit5.EnableWeld;
 import org.jboss.weld.junit5.WeldInitiator;
 import org.jboss.weld.junit5.WeldSetup;
@@ -20,8 +21,9 @@ class BookServiceTest {
     @WeldSetup
     WeldInitiator weld = WeldInitiator.of(
         BookService.class,
-        JdbcBookRepository.class,
-        DataSourceProducer.class,
+        JpaBookRepository.class,
+        TestEntityManagerProducer.class,
+        TestTransactionInterceptor.class,
         TestDatabaseCleaner.class
     );
 

@@ -1,14 +1,15 @@
 package com.example.library.application;
 
 import com.example.library.TestDatabaseCleaner;
+import com.example.library.TestEntityManagerProducer;
+import com.example.library.TestTransactionInterceptor;
 import com.example.library.domain.model.Book;
 import com.example.library.domain.model.Loan;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
-import com.example.library.infrastructure.database.DataSourceProducer;
-import com.example.library.infrastructure.repository.JdbcBookRepository;
-import com.example.library.infrastructure.repository.JdbcLoanRepository;
-import com.example.library.infrastructure.repository.JdbcMemberRepository;
+import com.example.library.infrastructure.repository.JpaBookRepository;
+import com.example.library.infrastructure.repository.JpaLoanRepository;
+import com.example.library.infrastructure.repository.JpaMemberRepository;
 import org.jboss.weld.junit5.EnableWeld;
 import org.jboss.weld.junit5.WeldInitiator;
 import org.jboss.weld.junit5.WeldSetup;
@@ -27,10 +28,11 @@ class LoanServiceTest {
         LoanService.class,
         BookService.class,
         MemberService.class,
-        JdbcBookRepository.class,
-        JdbcMemberRepository.class,
-        JdbcLoanRepository.class,
-        DataSourceProducer.class,
+        JpaBookRepository.class,
+        JpaMemberRepository.class,
+        JpaLoanRepository.class,
+        TestEntityManagerProducer.class,
+        TestTransactionInterceptor.class,
         TestDatabaseCleaner.class
     );
 

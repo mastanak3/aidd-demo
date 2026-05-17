@@ -3,6 +3,8 @@ package com.example.library.resource;
 import com.example.library.application.MemberService;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -12,9 +14,14 @@ import java.util.List;
 @Path("/members")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RequestScoped
 public class MemberResource {
 
-    private final MemberService memberService;
+    @Inject
+    private MemberService memberService;
+
+    public MemberResource() {
+    }
 
     public MemberResource(MemberService memberService) {
         this.memberService = memberService;

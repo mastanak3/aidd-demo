@@ -4,10 +4,12 @@ import com.example.library.domain.model.Book;
 import com.example.library.domain.repository.BookRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
 @ApplicationScoped
+@Transactional
 public class BookService {
 
     @Inject

@@ -1,15 +1,32 @@
 package com.example.library.domain.model;
 
+import jakarta.persistence.*;
 import java.time.LocalDate;
 
+@Entity
+@Table(name = "loans")
 public class Loan {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "book_id", nullable = false)
     private Long bookId;
+
+    @Column(name = "member_id", nullable = false)
     private Long memberId;
+
+    @Column(name = "loan_date", nullable = false)
     private LocalDate loanDate;
+
+    @Column(name = "due_date", nullable = false)
     private LocalDate dueDate;
+
+    @Column(name = "return_date")
     private LocalDate returnDate;
+
+    @Column(name = "overdue_fee", nullable = false)
     private int overdueFee;
 
     public Loan() {

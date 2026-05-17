@@ -5,10 +5,12 @@ import com.example.library.domain.model.MemberType;
 import com.example.library.domain.repository.MemberRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 
 import java.util.List;
 
 @ApplicationScoped
+@Transactional
 public class MemberService {
 
     @Inject

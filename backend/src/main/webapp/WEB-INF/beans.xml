@@ -4,7 +4,4 @@
        xsi:schemaLocation="https://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/beans_4_0.xsd"
        bean-discovery-mode="annotated"
        version="4.0">
-    <interceptors>
-        <class>com.example.library.TestTransactionInterceptor</class>
-    </interceptors>
 </beans>

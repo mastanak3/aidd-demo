@@ -2,6 +2,8 @@ package com.example.library.resource;
 
 import com.example.library.application.BookService;
 import com.example.library.domain.model.Book;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -11,9 +13,14 @@ import java.util.List;
 @Path("/books")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RequestScoped
 public class BookResource {
 
-    private final BookService bookService;
+    @Inject
+    private BookService bookService;
+
+    public BookResource() {
+    }
 
     public BookResource(BookService bookService) {
         this.bookService = bookService;

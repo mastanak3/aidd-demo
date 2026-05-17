@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://xmlns.jcp.org/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="http://xmlns.jcp.org/xml/ns/persistence http://xmlns.jcp.org/xml/ns/persistence/persistence_2_2.xsd"
+             version="2.2">
+    <persistence-unit name="library-test" transaction-type="RESOURCE_LOCAL">
+        <class>com.example.library.domain.model.Book</class>
+        <class>com.example.library.domain.model.Member</class>
+        <class>com.example.library.domain.model.Loan</class>
+        <properties>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://db:5432/library"/>
+            <property name="jakarta.persistence.jdbc.user" value="library"/>
+            <property name="jakarta.persistence.jdbc.password" value="library"/>
+            <property name="hibernate.hbm2ddl.auto" value="update"/>
+        </properties>
+    </persistence-unit>
+</persistence>

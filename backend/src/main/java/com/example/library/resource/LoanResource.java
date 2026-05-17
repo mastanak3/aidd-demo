@@ -2,6 +2,8 @@ package com.example.library.resource;
 
 import com.example.library.application.LoanService;
 import com.example.library.domain.model.Loan;
+import jakarta.enterprise.context.RequestScoped;
+import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
@@ -11,9 +13,14 @@ import java.util.List;
 @Path("/loans")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@RequestScoped
 public class LoanResource {
 
-    private final LoanService loanService;
+    @Inject
+    private LoanService loanService;
+
+    public LoanResource() {
+    }
 
     public LoanResource(LoanService loanService) {
         this.loanService = loanService;

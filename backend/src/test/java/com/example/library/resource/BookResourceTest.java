@@ -1,11 +1,11 @@
 package com.example.library.resource;
 
-import com.example.library.App;
+import com.example.library.TestApp;
 import com.example.library.TestDatabaseCleaner;
 import org.junit.jupiter.api.Tag;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import org.glassfish.grizzly.http.server.HttpServer;
+import org.jboss.resteasy.plugins.server.undertow.UndertowJaxrsServer;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.jupiter.api.*;
@@ -17,7 +17,7 @@ import static org.hamcrest.Matchers.*;
 class BookResourceTest {
 
     private static final int PORT = 18081;
-    private static HttpServer server;
+    private static UndertowJaxrsServer server;
     private static Weld weld;
     private static WeldContainer container;
     private static TestDatabaseCleaner cleaner;
@@ -27,7 +27,7 @@ class BookResourceTest {
         weld = new Weld();
         container = weld.initialize();
         cleaner = container.select(TestDatabaseCleaner.class).get();
-        server = App.startServer(container, PORT);
+        server = TestApp.startServer(container, PORT);
         RestAssured.baseURI = "http://localhost:" + PORT + "/api/";
     }
 
@@ -38,7 +38,7 @@ class BookResourceTest {
 
     @AfterAll
     static void tearDown() {
-        if (server != null) server.shutdown();
+        if (server != null) server.stop();
         if (weld != null) weld.shutdown();
     }
 
