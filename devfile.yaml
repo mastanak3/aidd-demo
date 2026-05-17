@@ -2,7 +2,7 @@ schemaVersion: 2.2.0
 metadata:
   name: devspaces-claude-verify
   description: Workspace with VS Code, Gitea, and Claude Code (Verification Mode)
-  version: 1.0.6
+  version: 1.1.0
 
 attributes:
   controller.devfile.io/default-editor: che-incubator/che-code/latest
@@ -49,13 +49,211 @@ commands:
       commandLine: "npm install -g @anthropic-ai/claude-code"
       workingDir: /projects
 
-  - id: setup-gitea
+  - id: download-gitea
     exec:
       component: tools
-      commandLine: "bash /projects/aidd-demo/setup-gitea.sh"
+      commandLine: |
+        set -e
+        GITEA_DIR="${HOME}/.gitea"
+        RUNNER_DIR="${HOME}/.act_runner"
+        mkdir -p "${GITEA_DIR}/data" "${GITEA_DIR}/custom/conf" "${GITEA_DIR}/repositories" "${GITEA_DIR}/log" "${RUNNER_DIR}"
+        if [ ! -f "${GITEA_DIR}/gitea" ]; then
+          echo "Downloading Gitea v1.23.0..."
+          curl -sL "https://dl.gitea.com/gitea/1.23.0/gitea-1.23.0-linux-amd64" -o "${GITEA_DIR}/gitea"
+          chmod +x "${GITEA_DIR}/gitea"
+        fi
+        if [ ! -f "${RUNNER_DIR}/act_runner" ]; then
+          echo "Downloading act_runner v0.2.12..."
+          curl -sL "https://dl.gitea.com/act_runner/0.2.12/act_runner-0.2.12-linux-amd64" -o "${RUNNER_DIR}/act_runner"
+          chmod +x "${RUNNER_DIR}/act_runner"
+        fi
+      workingDir: /projects
+
+  - id: configure-and-start-gitea
+    exec:
+      component: tools
+      commandLine: |
+        set -e
+        GITEA_DIR="${HOME}/.gitea"
+        GITEA_URL="http://localhost:3000"
+        RUNNER_TOKEN="workshop-runner-token-2024-devspaces"
+        GITEA_EXTERNAL_URL=""
+        if command -v kubectl >/dev/null 2>&1; then
+          WORKSPACE_ID="${HOSTNAME%%-*}"
+          ROUTE_HOST=$(kubectl get routes -n "${DEVWORKSPACE_NAMESPACE:-admin-devspaces}" \
+            -l "controller.devfile.io/devworkspace_id=${DEVWORKSPACE_ID:-${WORKSPACE_ID}}" \
+            -o jsonpath='{range .items[*]}{.metadata.annotations.che\.routing\.controller\.devfile\.io/endpoint-name}{"\t"}{.spec.host}{"\t"}{.spec.tls.termination}{"\n"}{end}' 2>/dev/null \
+            | awk -F'\t' '/^gitea-web\t/ {if ($3 != "") print "https://"$2; else print "http://"$2}' \
+            | head -1)
+          [ -n "$ROUTE_HOST" ] && GITEA_EXTERNAL_URL="${ROUTE_HOST}"
+        fi
+        GITEA_ROOT_URL="${GITEA_EXTERNAL_URL:-http://localhost:3000}"
+        cat > "${GITEA_DIR}/custom/conf/app.ini" << INIEOF
+        [server]
+        HTTP_PORT = 3000
+        HTTP_ADDR = 0.0.0.0
+        ROOT_URL = ${GITEA_ROOT_URL}/
+
+        [database]
+        DB_TYPE = sqlite3
+        PATH = ${GITEA_DIR}/data/gitea.db
+
+        [repository]
+        ROOT = ${GITEA_DIR}/repositories
+
+        [lfs]
+        PATH = ${GITEA_DIR}/data/lfs
+
+        [log]
+        ROOT_PATH = ${GITEA_DIR}/log
+
+        [security]
+        INSTALL_LOCK = true
+
+        [actions]
+        ENABLED = true
+        INIEOF
+        if ! pgrep -f "gitea.*web" > /dev/null 2>&1; then
+          echo "Starting Gitea..."
+          cd "${GITEA_DIR}"
+          GITEA_WORK_DIR="${GITEA_DIR}" GITEA_RUNNER_REGISTRATION_TOKEN="${RUNNER_TOKEN}" \
+            nohup "${GITEA_DIR}/gitea" web -c "${GITEA_DIR}/custom/conf/app.ini" > "${GITEA_DIR}/log/gitea.log" 2>&1 &
+        fi
+        echo "Waiting for Gitea..."
+        ELAPSED=0
+        until curl -sf "${GITEA_URL}/api/v1/version" > /dev/null 2>&1; do
+          if [ "$ELAPSED" -ge 120 ]; then echo "ERROR: Gitea timeout"; exit 1; fi
+          sleep 3; ELAPSED=$((ELAPSED + 3))
+        done
+        echo "Gitea is ready."
+      workingDir: /projects
+
+  - id: setup-gitea-data
+    exec:
+      component: tools
+      commandLine: |
+        set -e
+        GITEA_DIR="${HOME}/.gitea"
+        GITEA_URL="http://localhost:3000"
+        ADMIN_USER="gitea-admin"
+        ADMIN_PASS="password123"
+        ADMIN_EMAIL="admin@example.com"
+        REPO_NAME="aidd-demo"
+        RUNNER_TOKEN="workshop-runner-token-2024-devspaces"
+        RUNNER_DIR="${HOME}/.act_runner"
+        if ! curl -sf "${GITEA_URL}/api/v1/user" -u "${ADMIN_USER}:${ADMIN_PASS}" > /dev/null 2>&1; then
+          cd "${GITEA_DIR}"
+          "${GITEA_DIR}/gitea" admin user create \
+            --username "${ADMIN_USER}" --password "${ADMIN_PASS}" \
+            --email "${ADMIN_EMAIL}" --admin --must-change-password=false \
+            -c "${GITEA_DIR}/custom/conf/app.ini" 2>/dev/null
+          echo "Admin user created."
+        fi
+        TOKEN_RESPONSE=$(curl -sf "${GITEA_URL}/api/v1/users/${ADMIN_USER}/tokens" \
+          -u "${ADMIN_USER}:${ADMIN_PASS}" -H "Content-Type: application/json" \
+          -d "{\"name\":\"setup-token-$(date +%s)\",\"scopes\":[\"all\"]}")
+        API_TOKEN=$(echo "$TOKEN_RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha1', d.get('token', '')))" 2>/dev/null)
+        if [ -z "$API_TOKEN" ]; then echo "ERROR: Failed to create API token"; exit 1; fi
+        REPO_STATUS=$(curl -sf -o /dev/null -w "%{http_code}" \
+          "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}" \
+          -H "Authorization: token ${API_TOKEN}" 2>/dev/null || echo "000")
+        if [ "$REPO_STATUS" != "200" ]; then
+          curl -sf "${GITEA_URL}/api/v1/user/repos" \
+            -H "Authorization: token ${API_TOKEN}" -H "Content-Type: application/json" \
+            -d "{\"name\":\"${REPO_NAME}\",\"auto_init\":false,\"default_branch\":\"main\"}" > /dev/null
+          echo "Repository created."
+        fi
+        curl -sf "${GITEA_URL}/api/v1/repos/${ADMIN_USER}/${REPO_NAME}" -X PATCH \
+          -H "Authorization: token ${API_TOKEN}" -H "Content-Type: application/json" \
+          -d '{"has_actions":true}' > /dev/null
+        if [ ! -f "${RUNNER_DIR}/.runner" ]; then
+          cd "${RUNNER_DIR}"
+          "${RUNNER_DIR}/act_runner" register --no-interactive \
+            --instance "${GITEA_URL}" --token "${RUNNER_TOKEN}" \
+            --name "devspaces-runner" --labels "ubuntu-latest:host"
+          echo "Runner registered."
+        fi
+        if ! pgrep -f "act_runner.*daemon" > /dev/null 2>&1; then
+          cd "${RUNNER_DIR}"
+          nohup "${RUNNER_DIR}/act_runner" daemon > "${RUNNER_DIR}/runner.log" 2>&1 &
+          echo "Runner daemon started."
+        fi
       workingDir: /projects/aidd-demo
+
+  - id: push-to-gitea
+    exec:
+      component: tools
+      commandLine: |
+        set -e
+        GITEA_URL="http://localhost:3000"
+        ADMIN_USER="gitea-admin"
+        ADMIN_PASS="password123"
+        REPO_NAME="aidd-demo"
+        git config credential.helper store
+        echo "http://${ADMIN_USER}:${ADMIN_PASS}@localhost:3000" > ~/.git-credentials
+        GITEA_REPO_URL="${GITEA_URL}/${ADMIN_USER}/${REPO_NAME}.git"
+        CURRENT_ORIGIN=$(git remote get-url origin 2>/dev/null || echo "")
+        if [ -n "$CURRENT_ORIGIN" ] && [ "$CURRENT_ORIGIN" != "$GITEA_REPO_URL" ]; then
+          git remote set-url origin "$GITEA_REPO_URL"
+        elif [ -z "$CURRENT_ORIGIN" ]; then
+          git remote add origin "$GITEA_REPO_URL"
+        fi
+        git push -u origin main 2>&1 || git push -u origin HEAD:main 2>&1
+        echo "Code pushed to Gitea."
+      workingDir: /projects/aidd-demo
+
+  - id: setup-tls-route
+    exec:
+      component: tools
+      commandLine: |
+        if ! command -v kubectl >/dev/null 2>&1; then exit 0; fi
+        GITEA_DIR="${HOME}/.gitea"
+        NS="${DEVWORKSPACE_NAMESPACE:-admin-devspaces}"
+        WORKSPACE_ID="${HOSTNAME%%-*}"
+        WS_ID="${DEVWORKSPACE_ID:-${WORKSPACE_ID}}"
+        ROUTE_NAME=$(kubectl get routes -n "${NS}" \
+          -l "controller.devfile.io/devworkspace_id=${WS_ID}" \
+          -o jsonpath='{range .items[*]}{.metadata.annotations.che\.routing\.controller\.devfile\.io/endpoint-name}{"\t"}{.metadata.name}{"\t"}{.spec.tls.termination}{"\n"}{end}' 2>/dev/null \
+          | awk -F'\t' '/^gitea-web\t/ && $3 == "" {print $2}' | head -1)
+        if [ -z "$ROUTE_NAME" ]; then echo "Route already has TLS."; exit 0; fi
+        ROUTE_HOST=$(kubectl get route "$ROUTE_NAME" -n "${NS}" -o jsonpath='{.spec.host}' 2>/dev/null)
+        SVC_NAME=$(kubectl get route "$ROUTE_NAME" -n "${NS}" -o jsonpath='{.spec.to.name}' 2>/dev/null)
+        GITEA_EXTERNAL_URL="https://gitea-web.${ROUTE_HOST#*.}"
+        kubectl apply -f - << ROUTEEOF 2>/dev/null || true
+        apiVersion: route.openshift.io/v1
+        kind: Route
+        metadata:
+          name: gitea-web-tls
+          namespace: ${NS}
+          labels:
+            app: gitea-custom
+        spec:
+          host: gitea-web.${ROUTE_HOST#*.}
+          port:
+            targetPort: 3000
+          tls:
+            termination: edge
+            insecureEdgeTerminationPolicy: Redirect
+          to:
+            kind: Service
+            name: ${SVC_NAME}
+            weight: 100
+          wildcardPolicy: None
+        ROUTEEOF
+        sed -i "s|^ROOT_URL = .*|ROOT_URL = ${GITEA_EXTERNAL_URL}/|" "${GITEA_DIR}/custom/conf/app.ini"
+        echo "TLS Route created: ${GITEA_EXTERNAL_URL}"
+      workingDir: /projects
+
+  - id: setup-gitea-all
+    composite:
+      commands:
+        - download-gitea
+        - configure-and-start-gitea
+        - setup-gitea-data
+        - push-to-gitea
+        - setup-tls-route
 
 events:
   postStart:
     - install-claude
-    - setup-gitea
+    - setup-gitea-all
