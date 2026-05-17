@@ -28,7 +28,7 @@ BOOKS: dict[str, str] = {
     "Java言語で学ぶデザインパターン入門": "978-4815609801",
 }
 
-FAILURE_RATE = 0.2
+FAILURE_RATE = 0.3
 
 
 @app.get("/health")
