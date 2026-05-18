@@ -10,7 +10,7 @@ attributes:
 components:
   - name: tools
     container:
-      image: quay.io/devfile/universal-developer-image:latest
+      image: quay.io/devfile/universal-developer-image:ubi8-latest
       memoryLimit: 4G
       mountSources: true
       endpoints:
@@ -46,7 +46,10 @@ commands:
   - id: install-claude
     exec:
       component: tools
-      commandLine: "npm install -g @anthropic-ai/claude-code"
+      commandLine: |
+        export NVM_DIR="${HOME}/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+        npm install -g @anthropic-ai/claude-code
       workingDir: /projects
 
   - id: download-gitea
