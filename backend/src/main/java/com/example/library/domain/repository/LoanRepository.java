@@ -1,17 +1,11 @@
 package com.example.library.domain.repository;
 
 import com.example.library.domain.model.Loan;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
-import java.util.Optional;
 
-public interface LoanRepository {
+public interface LoanRepository extends JpaRepository<Loan, Long> {
 
-    Loan save(Loan loan);
-
-    Optional<Loan> findById(Long id);
-
-    List<Loan> findAll();
-
-    List<Loan> findActiveByMemberId(Long memberId);
+    List<Loan> findByMemberIdAndReturnDateIsNull(Long memberId);
 }

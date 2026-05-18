@@ -7,23 +7,25 @@ import com.example.library.domain.model.Member;
 import com.example.library.domain.repository.BookRepository;
 import com.example.library.domain.repository.LoanRepository;
 import com.example.library.domain.repository.MemberRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 
-@ApplicationScoped
+@Service
+@Transactional
 public class LoanService {
 
-    @Inject
-    private BookRepository bookRepository;
+    private final BookRepository bookRepository;
+    private final MemberRepository memberRepository;
+    private final LoanRepository loanRepository;
 
-    @Inject
-    private MemberRepository memberRepository;
-
-    @Inject
-    private LoanRepository loanRepository;
+    public LoanService(BookRepository bookRepository, MemberRepository memberRepository, LoanRepository loanRepository) {
+        this.bookRepository = bookRepository;
+        this.memberRepository = memberRepository;
+        this.loanRepository = loanRepository;
+    }
 
     public Loan borrowBook(Long memberId, Long bookId) {
         Member member = memberRepository.findById(memberId)
@@ -36,7 +38,7 @@ public class LoanService {
             throw new IllegalStateException("この書籍は現在貸出中です");
         }
 
-        List<Loan> activeLoans = loanRepository.findActiveByMemberId(memberId);
+        List<Loan> activeLoans = loanRepository.findByMemberIdAndReturnDateIsNull(memberId);
         if (!LendingPolicy.canBorrow(member.getMemberType(), activeLoans.size())) {
             throw new IllegalStateException("貸出上限に達しています（上限: "
                     + LendingPolicy.getMaxLoans(member.getMemberType()) + "冊）");
@@ -81,10 +83,12 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
+    @Transactional(readOnly = true)
     public List<Loan> findAll() {
         return loanRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
     public Loan findById(Long id) {
         return loanRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("貸出記録が見つかりません: ID=" + id));

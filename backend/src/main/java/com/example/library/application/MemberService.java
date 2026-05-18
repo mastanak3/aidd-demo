@@ -3,27 +3,33 @@ package com.example.library.application;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
 import com.example.library.domain.repository.MemberRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@ApplicationScoped
+@Service
+@Transactional
 public class MemberService {
 
-    @Inject
-    private MemberRepository memberRepository;
+    private final MemberRepository memberRepository;
+
+    public MemberService(MemberRepository memberRepository) {
+        this.memberRepository = memberRepository;
+    }
 
     public Member create(String name, String email, MemberType memberType) {
         Member member = new Member(name, email, memberType);
         return memberRepository.save(member);
     }
 
+    @Transactional(readOnly = true)
     public Member findById(Long id) {
         return memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("会員が見つかりません: ID=" + id));
     }
 
+    @Transactional(readOnly = true)
     public List<Member> findAll() {
         return memberRepository.findAll();
     }
