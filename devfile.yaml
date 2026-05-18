@@ -247,16 +247,11 @@ commands:
         echo "TLS Route created: ${GITEA_EXTERNAL_URL}"
       workingDir: /projects
 
-  - id: setup-gitea-all
-    composite:
-      commands:
-        - download-gitea
-        - configure-and-start-gitea
-        - setup-gitea-data
-        - push-to-gitea
-        - setup-tls-route
-
 events:
   postStart:
     - install-claude
-    - setup-gitea-all
+    - download-gitea
+    - configure-and-start-gitea
+    - setup-gitea-data
+    - push-to-gitea
+    - setup-tls-route
