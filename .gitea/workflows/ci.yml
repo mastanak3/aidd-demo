@@ -16,6 +16,22 @@ jobs:
       - name: Run unit tests
         run: export PATH="$JAVA_HOME/bin:$PATH" && cd backend && mvn test
 
+  sonar-analysis:
+    name: SonarQube Analysis
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Run tests and SonarQube analysis
+        run: >
+          export PATH="$JAVA_HOME/bin:$PATH" &&
+          cd backend &&
+          mvn verify sonar:sonar
+          -Dsonar.login=admin
+          -Dsonar.password=sonarpass
+
   e2e-tests:
     name: E2E Tests
     runs-on: ubuntu-latest
