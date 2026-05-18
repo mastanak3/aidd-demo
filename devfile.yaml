@@ -47,7 +47,12 @@ commands:
     exec:
       component: tools
       commandLine: |
+        cat > /tmp/setup-workspace.sh << 'SETUP_SCRIPT'
+        #!/bin/bash
         set -e
+        LOG="${HOME}/.workspace-setup.log"
+        exec > "$LOG" 2>&1
+        echo "=== Workspace setup started at $(date) ==="
 
         export NVM_DIR="${HOME}/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
@@ -61,7 +66,7 @@ commands:
         ADMIN_EMAIL="admin@example.com"
         REPO_NAME="aidd-demo"
 
-        # --- Phase 1: parallel downloads (npm install + gitea + act_runner) ---
+        # --- Phase 1: parallel downloads ---
         npm install -g @anthropic-ai/claude-code &
         NPM_PID=$!
 
@@ -77,6 +82,7 @@ commands:
 
         [ -n "${GITEA_DL_PID:-}" ] && wait "$GITEA_DL_PID" && chmod +x "${GITEA_DIR}/gitea"
         [ -n "${RUNNER_DL_PID:-}" ] && wait "$RUNNER_DL_PID" && chmod +x "${RUNNER_DIR}/act_runner"
+        echo "Downloads complete."
 
         # --- Phase 2: configure and start Gitea ---
         GITEA_EXTERNAL_URL=""
@@ -125,6 +131,7 @@ commands:
           if [ "$ELAPSED" -ge 120 ]; then echo "ERROR: Gitea timeout"; exit 1; fi
           sleep 3; ELAPSED=$((ELAPSED + 3))
         done
+        echo "Gitea is ready."
 
         # --- Phase 3: setup Gitea data ---
         if ! curl -sf "${GITEA_URL}/api/v1/user" -u "${ADMIN_USER}:${ADMIN_PASS}" > /dev/null 2>&1; then
@@ -212,8 +219,11 @@ commands:
           fi
         fi
 
-        # --- Wait for npm install to finish ---
         wait "$NPM_PID"
+        echo "=== Workspace setup completed at $(date) ==="
+        SETUP_SCRIPT
+        chmod +x /tmp/setup-workspace.sh
+        nohup /tmp/setup-workspace.sh &
       workingDir: /projects
 
 events:
