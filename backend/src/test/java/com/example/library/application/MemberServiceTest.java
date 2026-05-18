@@ -3,33 +3,20 @@ package com.example.library.application;
 import com.example.library.TestDatabaseCleaner;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
-import com.example.library.infrastructure.database.DataSourceProducer;
-import com.example.library.infrastructure.repository.JdbcMemberRepository;
-import org.jboss.weld.junit5.EnableWeld;
-import org.jboss.weld.junit5.WeldInitiator;
-import org.jboss.weld.junit5.WeldSetup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@EnableWeld
+@SpringBootTest
 class MemberServiceTest {
 
-    @WeldSetup
-    WeldInitiator weld = WeldInitiator.of(
-        MemberService.class,
-        JdbcMemberRepository.class,
-        DataSourceProducer.class,
-        TestDatabaseCleaner.class
-    );
-
-    @Inject
+    @Autowired
     MemberService memberService;
 
-    @Inject
+    @Autowired
     TestDatabaseCleaner dbCleaner;
 
     @BeforeEach

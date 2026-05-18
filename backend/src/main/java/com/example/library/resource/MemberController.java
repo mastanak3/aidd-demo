@@ -3,51 +3,47 @@ package com.example.library.resource;
 import com.example.library.application.MemberService;
 import com.example.library.domain.model.Member;
 import com.example.library.domain.model.MemberType;
-import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Path("/members")
-@Produces(MediaType.APPLICATION_JSON)
-@Consumes(MediaType.APPLICATION_JSON)
-public class MemberResource {
+@RestController
+@RequestMapping("/api/members")
+public class MemberController {
 
     private final MemberService memberService;
 
-    public MemberResource(MemberService memberService) {
+    public MemberController(MemberService memberService) {
         this.memberService = memberService;
     }
 
-    @GET
+    @GetMapping
     public List<Member> findAll() {
         return memberService.findAll();
     }
 
-    @GET
-    @Path("/{id}")
-    public Member findById(@PathParam("id") Long id) {
+    @GetMapping("/{id}")
+    public Member findById(@PathVariable Long id) {
         return memberService.findById(id);
     }
 
-    @POST
-    public Response create(MemberRequest request) {
+    @PostMapping
+    public ResponseEntity<Member> create(@RequestBody MemberRequest request) {
         Member member = memberService.create(request.name(), request.email(), request.memberType());
-        return Response.status(Response.Status.CREATED).entity(member).build();
+        return ResponseEntity.status(HttpStatus.CREATED).body(member);
     }
 
-    @PUT
-    @Path("/{id}")
-    public Member update(@PathParam("id") Long id, MemberRequest request) {
+    @PutMapping("/{id}")
+    public Member update(@PathVariable Long id, @RequestBody MemberRequest request) {
         return memberService.update(id, request.name(), request.email(), request.memberType());
     }
 
-    @DELETE
-    @Path("/{id}")
-    public Response delete(@PathParam("id") Long id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
         memberService.delete(id);
-        return Response.noContent().build();
+        return ResponseEntity.noContent().build();
     }
 
     public record MemberRequest(String name, String email, MemberType memberType) {

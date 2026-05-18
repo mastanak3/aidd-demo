@@ -1,57 +1,41 @@
 package com.example.library.resource;
 
-import com.example.library.App;
 import com.example.library.TestDatabaseCleaner;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import io.restassured.RestAssured;
-import io.restassured.http.ContentType;
-import org.glassfish.grizzly.http.server.HttpServer;
-import org.jboss.weld.environment.se.Weld;
-import org.jboss.weld.environment.se.WeldContainer;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.http.*;
 
-import static io.restassured.RestAssured.*;
-import static org.hamcrest.Matchers.*;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @Tag("e2e")
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class LendingPolicyE2ETest {
 
-    private static final int PORT = 18084;
-    private static HttpServer server;
-    private static Weld weld;
-    private static WeldContainer container;
-    private static TestDatabaseCleaner cleaner;
+    @Autowired
+    TestRestTemplate restTemplate;
 
-    @BeforeAll
-    static void setUpClass() {
-        weld = new Weld();
-        container = weld.initialize();
-        cleaner = container.select(TestDatabaseCleaner.class).get();
-        server = App.startServer(container, PORT);
-        RestAssured.baseURI = "http://localhost:" + PORT + "/api/";
-    }
+    @Autowired
+    TestDatabaseCleaner cleaner;
 
     @BeforeEach
     void setUp() {
         cleaner.cleanAll();
     }
 
-    @AfterAll
-    static void tearDown() {
-        if (server != null) server.shutdown();
-        if (weld != null) weld.shutdown();
-    }
-
-    // ========== 一般会員の貸出上限テスト ==========
-
     @Test
     void 一般会員_0冊の状態で貸出できる() {
         int memberId = createGeneralMember("会員A", "a@example.com");
         int bookId = createBook("書籍1", "著者1", "ISBN-001");
 
-        borrowBook(memberId, bookId)
-            .statusCode(201)
-            .body("active", equalTo(true));
+        var response = borrowBook(memberId, bookId);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(true, response.getBody().get("active"));
     }
 
     @Test
@@ -60,8 +44,8 @@ class LendingPolicyE2ETest {
         int book1 = createBook("書籍1", "著者1", "ISBN-001");
         int book2 = createBook("書籍2", "著者2", "ISBN-002");
 
-        borrowBook(memberId, book1).statusCode(201);
-        borrowBook(memberId, book2).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book1).getStatusCode());
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book2).getStatusCode());
     }
 
     @Test
@@ -71,9 +55,9 @@ class LendingPolicyE2ETest {
         int book2 = createBook("書籍2", "著者2", "ISBN-002");
         int book3 = createBook("書籍3", "著者3", "ISBN-003");
 
-        borrowBook(memberId, book1).statusCode(201);
-        borrowBook(memberId, book2).statusCode(201);
-        borrowBook(memberId, book3).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book1).getStatusCode());
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book2).getStatusCode());
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book3).getStatusCode());
     }
 
     @Test
@@ -81,27 +65,26 @@ class LendingPolicyE2ETest {
         int memberId = createGeneralMember("会員D", "d@example.com");
         for (int i = 1; i <= 3; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-00" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int book4 = createBook("書籍4", "著者4", "ISBN-004");
-        borrowBook(memberId, book4).statusCode(409);
+        assertEquals(HttpStatus.CONFLICT, borrowBook(memberId, book4).getStatusCode());
     }
 
     @Test
     void 一般会員_3冊借りて1冊返却後に再度貸出できる() {
         int memberId = createGeneralMember("会員E", "e@example.com");
-        int[] bookIds = new int[3];
         int[] loanIds = new int[3];
         for (int i = 0; i < 3; i++) {
-            bookIds[i] = createBook("書籍" + i, "著者" + i, "ISBN-00" + i);
-            loanIds[i] = borrowBookAndGetLoanId(memberId, bookIds[i]);
+            int bookId = createBook("書籍" + i, "著者" + i, "ISBN-00" + i);
+            loanIds[i] = borrowBookAndGetLoanId(memberId, bookId);
         }
 
-        returnBook(loanIds[0]).statusCode(200);
+        assertEquals(HttpStatus.OK, returnBook(loanIds[0]).getStatusCode());
 
         int newBook = createBook("新書籍", "新著者", "ISBN-NEW");
-        borrowBook(memberId, newBook).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, newBook).getStatusCode());
     }
 
     @Test
@@ -115,24 +98,22 @@ class LendingPolicyE2ETest {
         }
 
         for (int i = 0; i < 3; i++) {
-            returnBook(loanIds[i]).statusCode(200);
+            assertEquals(HttpStatus.OK, returnBook(loanIds[i]).getStatusCode());
         }
 
         for (int i = 0; i < 3; i++) {
-            borrowBook(memberId, bookIds[i]).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookIds[i]).getStatusCode());
         }
     }
-
-    // ========== プレミアム会員の貸出上限テスト ==========
 
     @Test
     void プレミアム会員_0冊の状態で貸出できる() {
         int memberId = createPremiumMember("P会員A", "pa@example.com");
         int bookId = createBook("書籍1", "著者1", "ISBN-P001");
 
-        borrowBook(memberId, bookId)
-            .statusCode(201)
-            .body("active", equalTo(true));
+        var response = borrowBook(memberId, bookId);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals(true, response.getBody().get("active"));
     }
 
     @Test
@@ -140,11 +121,11 @@ class LendingPolicyE2ETest {
         int memberId = createPremiumMember("P会員B", "pb@example.com");
         for (int i = 1; i <= 5; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int book6 = createBook("書籍6", "著者6", "ISBN-P006");
-        borrowBook(memberId, book6).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book6).getStatusCode());
     }
 
     @Test
@@ -152,11 +133,11 @@ class LendingPolicyE2ETest {
         int memberId = createPremiumMember("P会員C", "pc@example.com");
         for (int i = 1; i <= 9; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int book10 = createBook("書籍10", "著者10", "ISBN-P010");
-        borrowBook(memberId, book10).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, book10).getStatusCode());
     }
 
     @Test
@@ -164,11 +145,11 @@ class LendingPolicyE2ETest {
         int memberId = createPremiumMember("P会員D", "pd@example.com");
         for (int i = 1; i <= 10; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int book11 = createBook("書籍11", "著者11", "ISBN-P011");
-        borrowBook(memberId, book11).statusCode(409);
+        assertEquals(HttpStatus.CONFLICT, borrowBook(memberId, book11).getStatusCode());
     }
 
     @Test
@@ -181,26 +162,21 @@ class LendingPolicyE2ETest {
             if (i == 1) firstLoanId = loanId;
         }
 
-        returnBook(firstLoanId).statusCode(200);
+        assertEquals(HttpStatus.OK, returnBook(firstLoanId).getStatusCode());
 
         int newBook = createBook("新書籍", "新著者", "ISBN-PNEW");
-        borrowBook(memberId, newBook).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, newBook).getStatusCode());
     }
-
-    // ========== 書籍の状態遷移テスト ==========
 
     @Test
     void 貸出後に書籍が貸出不可になる() {
         int memberId = createGeneralMember("会員G", "g@example.com");
         int bookId = createBook("状態テスト書籍", "著者", "ISBN-ST1");
 
-        borrowBook(memberId, bookId).statusCode(201);
+        borrowBook(memberId, bookId);
 
-        when()
-            .get("books/" + bookId)
-        .then()
-            .statusCode(200)
-            .body("available", equalTo(false));
+        var response = restTemplate.getForEntity("/api/books/" + bookId, Map.class);
+        assertEquals(false, response.getBody().get("available"));
     }
 
     @Test
@@ -209,13 +185,10 @@ class LendingPolicyE2ETest {
         int bookId = createBook("状態テスト書籍2", "著者", "ISBN-ST2");
 
         int loanId = borrowBookAndGetLoanId(memberId, bookId);
-        returnBook(loanId).statusCode(200);
+        returnBook(loanId);
 
-        when()
-            .get("books/" + bookId)
-        .then()
-            .statusCode(200)
-            .body("available", equalTo(true));
+        var response = restTemplate.getForEntity("/api/books/" + bookId, Map.class);
+        assertEquals(true, response.getBody().get("available"));
     }
 
     @Test
@@ -224,8 +197,8 @@ class LendingPolicyE2ETest {
         int member2 = createGeneralMember("会員J", "j@example.com");
         int bookId = createBook("競合テスト書籍", "著者", "ISBN-C1");
 
-        borrowBook(member1, bookId).statusCode(201);
-        borrowBook(member2, bookId).statusCode(409);
+        assertEquals(HttpStatus.CREATED, borrowBook(member1, bookId).getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, borrowBook(member2, bookId).getStatusCode());
     }
 
     @Test
@@ -234,9 +207,9 @@ class LendingPolicyE2ETest {
         int bookId = createBook("再貸出テスト書籍", "著者", "ISBN-R1");
 
         int loanId = borrowBookAndGetLoanId(memberId, bookId);
-        returnBook(loanId).statusCode(200);
+        returnBook(loanId);
 
-        borrowBook(memberId, bookId).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
     }
 
     @Test
@@ -246,22 +219,20 @@ class LendingPolicyE2ETest {
         int bookId = createBook("別会員再貸出書籍", "著者", "ISBN-R2");
 
         int loanId = borrowBookAndGetLoanId(member1, bookId);
-        returnBook(loanId).statusCode(200);
+        returnBook(loanId);
 
-        borrowBook(member2, bookId).statusCode(201);
+        assertEquals(HttpStatus.CREATED, borrowBook(member2, bookId).getStatusCode());
     }
-
-    // ========== 貸出期間の検証 ==========
 
     @Test
     void 一般会員の貸出期間は14日() {
         int memberId = createGeneralMember("会員N", "n@example.com");
         int bookId = createBook("期間テスト書籍1", "著者", "ISBN-D1");
 
-        borrowBook(memberId, bookId)
-            .statusCode(201)
-            .body("loanDate", notNullValue())
-            .body("dueDate", notNullValue());
+        var response = borrowBook(memberId, bookId);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody().get("loanDate"));
+        assertNotNull(response.getBody().get("dueDate"));
     }
 
     @Test
@@ -269,42 +240,28 @@ class LendingPolicyE2ETest {
         int memberId = createPremiumMember("P会員F", "pf@example.com");
         int bookId = createBook("期間テスト書籍2", "著者", "ISBN-D2");
 
-        borrowBook(memberId, bookId)
-            .statusCode(201)
-            .body("loanDate", notNullValue())
-            .body("dueDate", notNullValue());
+        var response = borrowBook(memberId, bookId);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody().get("loanDate"));
+        assertNotNull(response.getBody().get("dueDate"));
     }
-
-    // ========== エラーケース ==========
 
     @Test
     void 存在しない会員で貸出するとエラー() {
         int bookId = createBook("エラーテスト書籍1", "著者", "ISBN-E1");
 
-        given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"memberId": 9999, "bookId": %d}
-                """.formatted(bookId))
-        .when()
-            .post("loans")
-        .then()
-            .statusCode(404);
+        var response = restTemplate.postForEntity("/api/loans",
+                Map.of("memberId", 9999, "bookId", bookId), Map.class);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
     @Test
     void 存在しない書籍を貸出するとエラー() {
         int memberId = createGeneralMember("会員O", "o@example.com");
 
-        given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"memberId": %d, "bookId": 9999}
-                """.formatted(memberId))
-        .when()
-            .post("loans")
-        .then()
-            .statusCode(404);
+        var response = restTemplate.postForEntity("/api/loans",
+                Map.of("memberId", memberId, "bookId", 9999), Map.class);
+        assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
     @Test
@@ -313,12 +270,11 @@ class LendingPolicyE2ETest {
 
         for (int i = 1; i <= 3; i++) {
             int bookId = createBook("連続書籍" + i, "著者" + i, "ISBN-SEQ" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int overBook = createBook("超過書籍", "著者X", "ISBN-OVER");
-        borrowBook(memberId, overBook)
-            .statusCode(409);
+        assertEquals(HttpStatus.CONFLICT, borrowBook(memberId, overBook).getStatusCode());
     }
 
     @Test
@@ -327,12 +283,11 @@ class LendingPolicyE2ETest {
 
         for (int i = 1; i <= 10; i++) {
             int bookId = createBook("P連続書籍" + i, "著者" + i, "ISBN-PSEQ" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
 
         int overBook = createBook("P超過書籍", "著者X", "ISBN-POVER");
-        borrowBook(memberId, overBook)
-            .statusCode(409);
+        assertEquals(HttpStatus.CONFLICT, borrowBook(memberId, overBook).getStatusCode());
     }
 
     @Test
@@ -346,75 +301,46 @@ class LendingPolicyE2ETest {
         }
 
         for (int loanId : loanIds) {
-            returnBook(loanId).statusCode(200);
+            assertEquals(HttpStatus.OK, returnBook(loanId).getStatusCode());
         }
 
         for (int i = 10; i < 13; i++) {
             int bookId = createBook("再貸出書籍" + i, "著者" + i, "ISBN-RE" + i);
-            borrowBook(memberId, bookId).statusCode(201);
+            assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
         }
     }
 
     // ========== ヘルパーメソッド ==========
 
     private int createGeneralMember(String name, String email) {
-        return given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name": "%s", "email": "%s", "memberType": "GENERAL"}
-                """.formatted(name, email))
-        .when()
-            .post("members")
-        .then()
-            .extract().path("id");
+        var response = restTemplate.postForEntity("/api/members",
+                Map.of("name", name, "email", email, "memberType", "GENERAL"), Map.class);
+        return (int) response.getBody().get("id");
     }
 
     private int createPremiumMember(String name, String email) {
-        return given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"name": "%s", "email": "%s", "memberType": "PREMIUM"}
-                """.formatted(name, email))
-        .when()
-            .post("members")
-        .then()
-            .extract().path("id");
+        var response = restTemplate.postForEntity("/api/members",
+                Map.of("name", name, "email", email, "memberType", "PREMIUM"), Map.class);
+        return (int) response.getBody().get("id");
     }
 
     private int createBook(String title, String author, String isbn) {
-        return given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"title": "%s", "author": "%s", "isbn": "%s"}
-                """.formatted(title, author, isbn))
-        .when()
-            .post("books")
-        .then()
-            .extract().path("id");
+        var response = restTemplate.postForEntity("/api/books",
+                Map.of("title", title, "author", author, "isbn", isbn), Map.class);
+        return (int) response.getBody().get("id");
     }
 
-    private io.restassured.response.ValidatableResponse borrowBook(int memberId, int bookId) {
-        return given()
-            .contentType(ContentType.JSON)
-            .body("""
-                {"memberId": %d, "bookId": %d}
-                """.formatted(memberId, bookId))
-        .when()
-            .post("loans")
-        .then();
+    private ResponseEntity<Map> borrowBook(int memberId, int bookId) {
+        return restTemplate.postForEntity("/api/loans",
+                Map.of("memberId", memberId, "bookId", bookId), Map.class);
     }
 
     private int borrowBookAndGetLoanId(int memberId, int bookId) {
-        return borrowBook(memberId, bookId)
-            .statusCode(201)
-            .extract().path("id");
+        var response = borrowBook(memberId, bookId);
+        return (int) response.getBody().get("id");
     }
 
-    private io.restassured.response.ValidatableResponse returnBook(int loanId) {
-        return given()
-            .contentType(ContentType.JSON)
-        .when()
-            .post("loans/" + loanId + "/return")
-        .then();
+    private ResponseEntity<Map> returnBook(int loanId) {
+        return restTemplate.postForEntity("/api/loans/" + loanId + "/return", null, Map.class);
     }
 }

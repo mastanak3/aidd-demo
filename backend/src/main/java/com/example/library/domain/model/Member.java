@@ -1,10 +1,19 @@
 package com.example.library.domain.model;
 
+import jakarta.persistence.*;
+
+@Entity
+@Table(name = "members")
 public class Member {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String name;
     private String email;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "member_type")
     private MemberType memberType;
 
     public Member() {
