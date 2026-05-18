@@ -2,27 +2,33 @@ package com.example.library.application;
 
 import com.example.library.domain.model.Book;
 import com.example.library.domain.repository.BookRepository;
-import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-@ApplicationScoped
+@Service
+@Transactional
 public class BookService {
 
-    @Inject
-    private BookRepository bookRepository;
+    private final BookRepository bookRepository;
+
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
+    }
 
     public Book create(String title, String author, String isbn) {
         Book book = new Book(title, author, isbn);
         return bookRepository.save(book);
     }
 
+    @Transactional(readOnly = true)
     public Book findById(Long id) {
         return bookRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("書籍が見つかりません: ID=" + id));
     }
 
+    @Transactional(readOnly = true)
     public List<Book> findAll() {
         return bookRepository.findAll();
     }

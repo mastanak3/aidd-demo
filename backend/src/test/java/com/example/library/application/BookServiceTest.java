@@ -2,33 +2,20 @@ package com.example.library.application;
 
 import com.example.library.TestDatabaseCleaner;
 import com.example.library.domain.model.Book;
-import com.example.library.infrastructure.database.DataSourceProducer;
-import com.example.library.infrastructure.repository.JdbcBookRepository;
-import org.jboss.weld.junit5.EnableWeld;
-import org.jboss.weld.junit5.WeldInitiator;
-import org.jboss.weld.junit5.WeldSetup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import jakarta.inject.Inject;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@EnableWeld
+@SpringBootTest
 class BookServiceTest {
 
-    @WeldSetup
-    WeldInitiator weld = WeldInitiator.of(
-        BookService.class,
-        JdbcBookRepository.class,
-        DataSourceProducer.class,
-        TestDatabaseCleaner.class
-    );
-
-    @Inject
+    @Autowired
     BookService bookService;
 
-    @Inject
+    @Autowired
     TestDatabaseCleaner dbCleaner;
 
     @BeforeEach
