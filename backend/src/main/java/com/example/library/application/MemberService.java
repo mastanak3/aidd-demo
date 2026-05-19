@@ -18,13 +18,13 @@ public class MemberService {
         this.memberRepository = memberRepository;
     }
 
-    public Member create(String name, String email, MemberType memberType) {
-        Member member = new Member(name, email, memberType);
+    public Member create(String id, String name, String email, MemberType memberType) {
+        Member member = new Member(id, name, email, memberType);
         return memberRepository.save(member);
     }
 
     @Transactional(readOnly = true)
-    public Member findById(Long id) {
+    public Member findById(String id) {
         return memberRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("会員が見つかりません: ID=" + id));
     }
@@ -34,7 +34,7 @@ public class MemberService {
         return memberRepository.findAll();
     }
 
-    public Member update(Long id, String name, String email, MemberType memberType) {
+    public Member update(String id, String name, String email, MemberType memberType) {
         Member member = findById(id);
         member.setName(name);
         member.setEmail(email);
@@ -42,7 +42,7 @@ public class MemberService {
         return memberRepository.save(member);
     }
 
-    public void delete(Long id) {
+    public void delete(String id) {
         findById(id);
         memberRepository.deleteById(id);
     }

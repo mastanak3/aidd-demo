@@ -33,7 +33,7 @@ class LoanServiceTest {
     @BeforeEach
     void setUp() {
         dbCleaner.cleanAll();
-        generalMember = memberService.create("田中太郎", "tanaka@example.com", MemberType.GENERAL);
+        generalMember = memberService.create("0000001", "田中太郎", "tanaka@example.com", MemberType.GENERAL);
         book = bookService.create("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
     }
 
@@ -62,7 +62,7 @@ class LoanServiceTest {
     void 貸出中の書籍は借りられない() {
         loanService.borrowBook(generalMember.getId(), book.getId());
 
-        Member anotherMember = memberService.create("鈴木", "suzuki@example.com", MemberType.GENERAL);
+        Member anotherMember = memberService.create("0000002", "鈴木", "suzuki@example.com", MemberType.GENERAL);
         assertThrows(IllegalStateException.class,
                 () -> loanService.borrowBook(anotherMember.getId(), book.getId()));
     }
@@ -98,7 +98,7 @@ class LoanServiceTest {
 
     @Test
     void プレミアム会員は10冊まで借りられる() {
-        Member premiumMember = memberService.create("高橋", "takahashi@example.com", MemberType.PREMIUM);
+        Member premiumMember = memberService.create("0000002", "高橋", "takahashi@example.com", MemberType.PREMIUM);
 
         for (int i = 0; i < 10; i++) {
             Book b = bookService.create("書籍" + i, "著者" + i, "ISBN-" + i);
@@ -145,7 +145,7 @@ class LoanServiceTest {
     @Test
     void 存在しない会員で貸出すると例外() {
         assertThrows(IllegalArgumentException.class,
-                () -> loanService.borrowBook(9999L, book.getId()));
+                () -> loanService.borrowBook("9999999", book.getId()));
     }
 
     @Test

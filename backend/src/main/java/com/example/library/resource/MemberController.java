@@ -25,27 +25,27 @@ public class MemberController {
     }
 
     @GetMapping("/{id}")
-    public Member findById(@PathVariable Long id) {
+    public Member findById(@PathVariable String id) {
         return memberService.findById(id);
     }
 
     @PostMapping
     public ResponseEntity<Member> create(@RequestBody MemberRequest request) {
-        Member member = memberService.create(request.name(), request.email(), request.memberType());
+        Member member = memberService.create(request.id(), request.name(), request.email(), request.memberType());
         return ResponseEntity.status(HttpStatus.CREATED).body(member);
     }
 
     @PutMapping("/{id}")
-    public Member update(@PathVariable Long id, @RequestBody MemberRequest request) {
+    public Member update(@PathVariable String id, @RequestBody MemberRequest request) {
         return memberService.update(id, request.name(), request.email(), request.memberType());
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable String id) {
         memberService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    public record MemberRequest(String name, String email, MemberType memberType) {
+    public record MemberRequest(String id, String name, String email, MemberType memberType) {
     }
 }

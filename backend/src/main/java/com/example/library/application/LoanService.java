@@ -27,7 +27,7 @@ public class LoanService {
         this.loanRepository = loanRepository;
     }
 
-    public Loan borrowBook(Long memberId, Long bookId) {
+    public Loan borrowBook(String memberId, Long bookId) {
         Member member = memberRepository.findById(memberId)
                 .orElseThrow(() -> new IllegalArgumentException("会員が見つかりません: ID=" + memberId));
 

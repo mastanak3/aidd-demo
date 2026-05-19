@@ -31,7 +31,7 @@ class LoanControllerTest {
 
     @Test
     void 書籍を貸出できる() {
-        int memberId = createMember("田中太郎", "tanaka@example.com");
+        String memberId = createMember("0000001", "田中太郎", "tanaka@example.com");
         int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
 
         var response = restTemplate.postForEntity("/api/loans",
@@ -48,7 +48,7 @@ class LoanControllerTest {
 
     @Test
     void 全貸出を取得できる() {
-        int memberId = createMember("田中太郎", "tanaka@example.com");
+        String memberId = createMember("0000001", "田中太郎", "tanaka@example.com");
         int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
 
         restTemplate.postForEntity("/api/loans",
@@ -62,7 +62,7 @@ class LoanControllerTest {
 
     @Test
     void 書籍を返却できる() {
-        int memberId = createMember("田中太郎", "tanaka@example.com");
+        String memberId = createMember("0000001", "田中太郎", "tanaka@example.com");
         int bookId = createBook("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
 
         var loanResponse = restTemplate.postForEntity("/api/loans",
@@ -78,23 +78,23 @@ class LoanControllerTest {
 
     @Test
     void 貸出中の書籍は借りられない() {
-        int memberId = createMember("田中太郎", "tanaka@example.com");
+        String memberId = createMember("0000001", "田中太郎", "tanaka@example.com");
         int bookId = createBook("書籍X", "著者X", "ISBN-X");
 
         restTemplate.postForEntity("/api/loans",
                 Map.of("memberId", memberId, "bookId", bookId), Map.class);
 
-        int anotherMemberId = createMember("鈴木", "suzuki@example.com");
+        String anotherMemberId = createMember("0000002", "鈴木", "suzuki@example.com");
         var response = restTemplate.postForEntity("/api/loans",
                 Map.of("memberId", anotherMemberId, "bookId", bookId), Map.class);
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     }
 
-    private int createMember(String name, String email) {
+    private String createMember(String id, String name, String email) {
         var response = restTemplate.postForEntity("/api/members",
-                Map.of("name", name, "email", email, "memberType", "GENERAL"), Map.class);
-        return (int) response.getBody().get("id");
+                Map.of("id", id, "name", name, "email", email, "memberType", "GENERAL"), Map.class);
+        return (String) response.getBody().get("id");
     }
 
     private int createBook(String title, String author, String isbn) {

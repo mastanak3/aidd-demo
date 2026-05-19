@@ -32,20 +32,20 @@ class MemberControllerTest {
     @Test
     void 一般会員を登録できる() {
         var response = restTemplate.postForEntity("/api/members",
-                Map.of("name", "田中太郎", "email", "tanaka@example.com", "memberType", "GENERAL"),
+                Map.of("id", "0000001", "name", "田中太郎", "email", "tanaka@example.com", "memberType", "GENERAL"),
                 Map.class);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertEquals("0000001", response.getBody().get("id"));
         assertEquals("田中太郎", response.getBody().get("name"));
         assertEquals("tanaka@example.com", response.getBody().get("email"));
         assertEquals("GENERAL", response.getBody().get("memberType"));
-        assertNotNull(response.getBody().get("id"));
     }
 
     @Test
     void プレミアム会員を登録できる() {
         var response = restTemplate.postForEntity("/api/members",
-                Map.of("name", "鈴木花子", "email", "suzuki@example.com", "memberType", "PREMIUM"),
+                Map.of("id", "0000001", "name", "鈴木花子", "email", "suzuki@example.com", "memberType", "PREMIUM"),
                 Map.class);
 
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
@@ -55,7 +55,7 @@ class MemberControllerTest {
     @Test
     void 全会員を取得できる() {
         restTemplate.postForEntity("/api/members",
-                Map.of("name", "会員A", "email", "a@example.com", "memberType", "GENERAL"), Map.class);
+                Map.of("id", "0000001", "name", "会員A", "email", "a@example.com", "memberType", "GENERAL"), Map.class);
 
         var response = restTemplate.getForEntity("/api/members", List.class);
 
@@ -65,12 +65,11 @@ class MemberControllerTest {
 
     @Test
     void IDで会員を取得できる() {
-        var created = restTemplate.postForEntity("/api/members",
-                Map.of("name", "佐藤次郎", "email", "sato@example.com", "memberType", "GENERAL"),
+        restTemplate.postForEntity("/api/members",
+                Map.of("id", "0000001", "name", "佐藤次郎", "email", "sato@example.com", "memberType", "GENERAL"),
                 Map.class);
-        var id = created.getBody().get("id");
 
-        var response = restTemplate.getForEntity("/api/members/" + id, Map.class);
+        var response = restTemplate.getForEntity("/api/members/0000001", Map.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("佐藤次郎", response.getBody().get("name"));
@@ -78,13 +77,12 @@ class MemberControllerTest {
 
     @Test
     void 会員を更新できる() {
-        var created = restTemplate.postForEntity("/api/members",
-                Map.of("name", "旧名前", "email", "old@example.com", "memberType", "GENERAL"),
+        restTemplate.postForEntity("/api/members",
+                Map.of("id", "0000001", "name", "旧名前", "email", "old@example.com", "memberType", "GENERAL"),
                 Map.class);
-        var id = created.getBody().get("id");
 
         var request = new HttpEntity<>(Map.of("name", "新名前", "email", "new@example.com", "memberType", "PREMIUM"));
-        var response = restTemplate.exchange("/api/members/" + id, HttpMethod.PUT, request, Map.class);
+        var response = restTemplate.exchange("/api/members/0000001", HttpMethod.PUT, request, Map.class);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals("新名前", response.getBody().get("name"));
@@ -93,12 +91,11 @@ class MemberControllerTest {
 
     @Test
     void 会員を削除できる() {
-        var created = restTemplate.postForEntity("/api/members",
-                Map.of("name", "削除対象", "email", "del@example.com", "memberType", "GENERAL"),
+        restTemplate.postForEntity("/api/members",
+                Map.of("id", "0000001", "name", "削除対象", "email", "del@example.com", "memberType", "GENERAL"),
                 Map.class);
-        var id = created.getBody().get("id");
 
-        var response = restTemplate.exchange("/api/members/" + id, HttpMethod.DELETE, null, Void.class);
+        var response = restTemplate.exchange("/api/members/0000001", HttpMethod.DELETE, null, Void.class);
 
         assertEquals(HttpStatus.NO_CONTENT, response.getStatusCode());
     }

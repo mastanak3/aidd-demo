@@ -15,8 +15,8 @@ public class Loan {
     @Column(name = "book_id")
     private Long bookId;
 
-    @Column(name = "member_id")
-    private Long memberId;
+    @Column(name = "member_id", length = 7)
+    private String memberId;
 
     @Column(name = "loan_date")
     private LocalDate loanDate;
@@ -33,7 +33,7 @@ public class Loan {
     public Loan() {
     }
 
-    public Loan(Long bookId, Long memberId, LocalDate loanDate, LocalDate dueDate) {
+    public Loan(Long bookId, String memberId, LocalDate loanDate, LocalDate dueDate) {
         this.bookId = bookId;
         this.memberId = memberId;
         this.loanDate = loanDate;
@@ -67,11 +67,11 @@ public class Loan {
         this.bookId = bookId;
     }
 
-    public Long getMemberId() {
+    public String getMemberId() {
         return memberId;
     }
 
-    public void setMemberId(Long memberId) {
+    public void setMemberId(String memberId) {
         this.memberId = memberId;
     }
 

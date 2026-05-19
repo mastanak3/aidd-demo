@@ -39,6 +39,6 @@ public class LoanController {
         return loanService.returnBook(id, bookPost);
     }
 
-    public record LoanRequest(Long memberId, Long bookId) {
+    public record LoanRequest(String memberId, Long bookId) {
     }
 }

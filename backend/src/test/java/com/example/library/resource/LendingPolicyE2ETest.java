@@ -30,7 +30,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_0冊の状態で貸出できる() {
-        int memberId = createGeneralMember("会員A", "a@example.com");
+        String memberId = createGeneralMember("0000001", "会員A", "a@example.com");
         int bookId = createBook("書籍1", "著者1", "ISBN-001");
 
         var response = borrowBook(memberId, bookId);
@@ -40,7 +40,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_1冊借りている状態で2冊目を貸出できる() {
-        int memberId = createGeneralMember("会員B", "b@example.com");
+        String memberId = createGeneralMember("0000001", "会員B", "b@example.com");
         int book1 = createBook("書籍1", "著者1", "ISBN-001");
         int book2 = createBook("書籍2", "著者2", "ISBN-002");
 
@@ -50,7 +50,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_2冊借りている状態で3冊目を貸出できる() {
-        int memberId = createGeneralMember("会員C", "c@example.com");
+        String memberId = createGeneralMember("0000001", "会員C", "c@example.com");
         int book1 = createBook("書籍1", "著者1", "ISBN-001");
         int book2 = createBook("書籍2", "著者2", "ISBN-002");
         int book3 = createBook("書籍3", "著者3", "ISBN-003");
@@ -62,7 +62,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_3冊借りている状態で4冊目は貸出不可() {
-        int memberId = createGeneralMember("会員D", "d@example.com");
+        String memberId = createGeneralMember("0000001", "会員D", "d@example.com");
         for (int i = 1; i <= 3; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-00" + i);
             assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
@@ -74,7 +74,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_3冊借りて1冊返却後に再度貸出できる() {
-        int memberId = createGeneralMember("会員E", "e@example.com");
+        String memberId = createGeneralMember("0000001", "会員E", "e@example.com");
         int[] loanIds = new int[3];
         for (int i = 0; i < 3; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-00" + i);
@@ -89,7 +89,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_上限到達後に返却して再度上限まで借りられる() {
-        int memberId = createGeneralMember("会員F", "f@example.com");
+        String memberId = createGeneralMember("0000001", "会員F", "f@example.com");
         int[] bookIds = new int[3];
         int[] loanIds = new int[3];
         for (int i = 0; i < 3; i++) {
@@ -108,7 +108,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員_0冊の状態で貸出できる() {
-        int memberId = createPremiumMember("P会員A", "pa@example.com");
+        String memberId = createPremiumMember("0000001", "P会員A", "pa@example.com");
         int bookId = createBook("書籍1", "著者1", "ISBN-P001");
 
         var response = borrowBook(memberId, bookId);
@@ -118,7 +118,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員_5冊借りている状態で6冊目を貸出できる() {
-        int memberId = createPremiumMember("P会員B", "pb@example.com");
+        String memberId = createPremiumMember("0000001", "P会員B", "pb@example.com");
         for (int i = 1; i <= 5; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
             assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
@@ -130,7 +130,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員_9冊借りている状態で10冊目を貸出できる() {
-        int memberId = createPremiumMember("P会員C", "pc@example.com");
+        String memberId = createPremiumMember("0000001", "P会員C", "pc@example.com");
         for (int i = 1; i <= 9; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
             assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
@@ -142,7 +142,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員_10冊借りている状態で11冊目は貸出不可() {
-        int memberId = createPremiumMember("P会員D", "pd@example.com");
+        String memberId = createPremiumMember("0000001", "P会員D", "pd@example.com");
         for (int i = 1; i <= 10; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
             assertEquals(HttpStatus.CREATED, borrowBook(memberId, bookId).getStatusCode());
@@ -154,7 +154,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員_10冊借りて1冊返却後に再度貸出できる() {
-        int memberId = createPremiumMember("P会員E", "pe@example.com");
+        String memberId = createPremiumMember("0000001", "P会員E", "pe@example.com");
         int firstLoanId = 0;
         for (int i = 1; i <= 10; i++) {
             int bookId = createBook("書籍" + i, "著者" + i, "ISBN-P00" + i);
@@ -170,7 +170,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 貸出後に書籍が貸出不可になる() {
-        int memberId = createGeneralMember("会員G", "g@example.com");
+        String memberId = createGeneralMember("0000001", "会員G", "g@example.com");
         int bookId = createBook("状態テスト書籍", "著者", "ISBN-ST1");
 
         borrowBook(memberId, bookId);
@@ -181,7 +181,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 返却後に書籍が貸出可能に戻る() {
-        int memberId = createGeneralMember("会員H", "h@example.com");
+        String memberId = createGeneralMember("0000001", "会員H", "h@example.com");
         int bookId = createBook("状態テスト書籍2", "著者", "ISBN-ST2");
 
         int loanId = borrowBookAndGetLoanId(memberId, bookId);
@@ -193,8 +193,8 @@ class LendingPolicyE2ETest {
 
     @Test
     void 貸出中の書籍を別の会員が借りると409() {
-        int member1 = createGeneralMember("会員I", "i@example.com");
-        int member2 = createGeneralMember("会員J", "j@example.com");
+        String member1 = createGeneralMember("0000001", "会員I", "i@example.com");
+        String member2 = createGeneralMember("0000002", "会員J", "j@example.com");
         int bookId = createBook("競合テスト書籍", "著者", "ISBN-C1");
 
         assertEquals(HttpStatus.CREATED, borrowBook(member1, bookId).getStatusCode());
@@ -203,7 +203,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 返却済み書籍を再度貸出できる() {
-        int memberId = createGeneralMember("会員K", "k@example.com");
+        String memberId = createGeneralMember("0000001", "会員K", "k@example.com");
         int bookId = createBook("再貸出テスト書籍", "著者", "ISBN-R1");
 
         int loanId = borrowBookAndGetLoanId(memberId, bookId);
@@ -214,8 +214,8 @@ class LendingPolicyE2ETest {
 
     @Test
     void 返却済み書籍を別の会員が貸出できる() {
-        int member1 = createGeneralMember("会員L", "l@example.com");
-        int member2 = createGeneralMember("会員M", "m@example.com");
+        String member1 = createGeneralMember("0000001", "会員L", "l@example.com");
+        String member2 = createGeneralMember("0000002", "会員M", "m@example.com");
         int bookId = createBook("別会員再貸出書籍", "著者", "ISBN-R2");
 
         int loanId = borrowBookAndGetLoanId(member1, bookId);
@@ -226,7 +226,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員の貸出期間は14日() {
-        int memberId = createGeneralMember("会員N", "n@example.com");
+        String memberId = createGeneralMember("0000001", "会員N", "n@example.com");
         int bookId = createBook("期間テスト書籍1", "著者", "ISBN-D1");
 
         var response = borrowBook(memberId, bookId);
@@ -237,7 +237,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員の貸出期間は30日() {
-        int memberId = createPremiumMember("P会員F", "pf@example.com");
+        String memberId = createPremiumMember("0000001", "P会員F", "pf@example.com");
         int bookId = createBook("期間テスト書籍2", "著者", "ISBN-D2");
 
         var response = borrowBook(memberId, bookId);
@@ -251,13 +251,13 @@ class LendingPolicyE2ETest {
         int bookId = createBook("エラーテスト書籍1", "著者", "ISBN-E1");
 
         var response = restTemplate.postForEntity("/api/loans",
-                Map.of("memberId", 9999, "bookId", bookId), Map.class);
+                Map.of("memberId", "9999999", "bookId", bookId), Map.class);
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
     }
 
     @Test
     void 存在しない書籍を貸出するとエラー() {
-        int memberId = createGeneralMember("会員O", "o@example.com");
+        String memberId = createGeneralMember("0000001", "会員O", "o@example.com");
 
         var response = restTemplate.postForEntity("/api/loans",
                 Map.of("memberId", memberId, "bookId", 9999), Map.class);
@@ -266,7 +266,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員が連続で上限まで借りて超過を確認() {
-        int memberId = createGeneralMember("連続テスト会員", "seq@example.com");
+        String memberId = createGeneralMember("0000001", "連続テスト会員", "seq@example.com");
 
         for (int i = 1; i <= 3; i++) {
             int bookId = createBook("連続書籍" + i, "著者" + i, "ISBN-SEQ" + i);
@@ -279,7 +279,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void プレミアム会員が連続で上限まで借りて超過を確認() {
-        int memberId = createPremiumMember("P連続テスト会員", "pseq@example.com");
+        String memberId = createPremiumMember("0000001", "P連続テスト会員", "pseq@example.com");
 
         for (int i = 1; i <= 10; i++) {
             int bookId = createBook("P連続書籍" + i, "著者" + i, "ISBN-PSEQ" + i);
@@ -292,7 +292,7 @@ class LendingPolicyE2ETest {
 
     @Test
     void 一般会員_全返却後に再度上限まで貸出可能() {
-        int memberId = createGeneralMember("全返却テスト", "allret@example.com");
+        String memberId = createGeneralMember("0000001", "全返却テスト", "allret@example.com");
 
         int[] loanIds = new int[3];
         for (int i = 0; i < 3; i++) {
@@ -312,16 +312,16 @@ class LendingPolicyE2ETest {
 
     // ========== ヘルパーメソッド ==========
 
-    private int createGeneralMember(String name, String email) {
+    private String createGeneralMember(String id, String name, String email) {
         var response = restTemplate.postForEntity("/api/members",
-                Map.of("name", name, "email", email, "memberType", "GENERAL"), Map.class);
-        return (int) response.getBody().get("id");
+                Map.of("id", id, "name", name, "email", email, "memberType", "GENERAL"), Map.class);
+        return (String) response.getBody().get("id");
     }
 
-    private int createPremiumMember(String name, String email) {
+    private String createPremiumMember(String id, String name, String email) {
         var response = restTemplate.postForEntity("/api/members",
-                Map.of("name", name, "email", email, "memberType", "PREMIUM"), Map.class);
-        return (int) response.getBody().get("id");
+                Map.of("id", id, "name", name, "email", email, "memberType", "PREMIUM"), Map.class);
+        return (String) response.getBody().get("id");
     }
 
     private int createBook(String title, String author, String isbn) {
@@ -330,12 +330,12 @@ class LendingPolicyE2ETest {
         return (int) response.getBody().get("id");
     }
 
-    private ResponseEntity<Map> borrowBook(int memberId, int bookId) {
+    private ResponseEntity<Map> borrowBook(String memberId, int bookId) {
         return restTemplate.postForEntity("/api/loans",
                 Map.of("memberId", memberId, "bookId", bookId), Map.class);
     }
 
-    private int borrowBookAndGetLoanId(int memberId, int bookId) {
+    private int borrowBookAndGetLoanId(String memberId, int bookId) {
         var response = borrowBook(memberId, bookId);
         return (int) response.getBody().get("id");
     }

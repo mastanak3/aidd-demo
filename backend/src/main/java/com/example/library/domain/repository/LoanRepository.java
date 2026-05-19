@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface LoanRepository extends JpaRepository<Loan, Long> {
 
-    List<Loan> findByMemberIdAndReturnDateIsNull(Long memberId);
+    List<Loan> findByMemberIdAndReturnDateIsNull(String memberId);
 }
