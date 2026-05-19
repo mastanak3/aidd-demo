@@ -30,7 +30,7 @@ export default function MembersPage() {
     fetchMembers();
   }, []);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("この会員を削除しますか？")) return;
     try {
       await deleteMember(id);

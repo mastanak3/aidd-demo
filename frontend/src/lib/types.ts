@@ -15,13 +15,14 @@ export interface BookRequest {
 }
 
 export interface Member {
-  id: number;
+  id: string;
   name: string;
   email: string;
   memberType: MemberType;
 }
 
 export interface MemberRequest {
+  id: string;
   name: string;
   email: string;
   memberType: MemberType;
@@ -30,14 +31,15 @@ export interface MemberRequest {
 export interface Loan {
   id: number;
   bookId: number;
-  memberId: number;
+  memberId: string;
   loanDate: string;
   dueDate: string;
   returnDate: string | null;
   overdueFee: number;
+  extended: boolean;
 }
 
 export interface LoanRequest {
-  memberId: number;
+  memberId: string;
   bookId: number;
 }

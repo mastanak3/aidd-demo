@@ -12,6 +12,7 @@ class MemberPlaywrightTest extends PlaywrightTestBase {
     void 一般会員を登録して一覧に表示される() {
         navigateTo("/members/new");
 
+        fillFormField("会員ID", "0000001");
         fillFormField("名前", "田中太郎");
         fillFormField("メールアドレス", "tanaka@example.com");
         page.getByRole(AriaRole.BUTTON, new com.microsoft.playwright.Page.GetByRoleOptions().setName("登録")).click();
@@ -26,6 +27,7 @@ class MemberPlaywrightTest extends PlaywrightTestBase {
     void プレミアム会員を登録して一覧に表示される() {
         navigateTo("/members/new");
 
+        fillFormField("会員ID", "0000002");
         fillFormField("名前", "鈴木花子");
         fillFormField("メールアドレス", "suzuki@example.com");
         selectFormField("会員種別", "プレミアム");
@@ -39,6 +41,7 @@ class MemberPlaywrightTest extends PlaywrightTestBase {
     @Test
     void 会員を削除すると一覧から消える() {
         navigateTo("/members/new");
+        fillFormField("会員ID", "0000003");
         fillFormField("名前", "削除対象会員");
         fillFormField("メールアドレス", "delete@example.com");
         page.getByRole(AriaRole.BUTTON, new com.microsoft.playwright.Page.GetByRoleOptions().setName("登録")).click();

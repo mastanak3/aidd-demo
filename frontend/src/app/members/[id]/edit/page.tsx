@@ -17,7 +17,7 @@ export default function EditMemberPage() {
   useEffect(() => {
     const fetchMember = async () => {
       try {
-        const data = await getMember(Number(params.id));
+        const data = await getMember(params.id);
         setMember(data);
       } catch (e) {
         setError(e instanceof Error ? e.message : "会員の取得に失敗しました");
@@ -37,10 +37,12 @@ export default function EditMemberPage() {
       {member && (
         <MemberForm
           initialData={{
+            id: member.id,
             name: member.name,
             email: member.email,
             memberType: member.memberType,
           }}
+          idReadOnly
           submitLabel="更新"
           onSubmit={async (data) => {
             try {

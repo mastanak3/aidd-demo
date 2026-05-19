@@ -19,7 +19,7 @@ class LoanPlaywrightTest extends PlaywrightTestBase {
     @BeforeEach
     void setUpData() {
         restTemplate.postForEntity("/api/members",
-                Map.of("name", "テスト会員", "email", "test@example.com", "memberType", "GENERAL"), Map.class);
+                Map.of("id", "0000001", "name", "テスト会員", "email", "test@example.com", "memberType", "GENERAL"), Map.class);
         restTemplate.postForEntity("/api/books",
                 Map.of("title", "テスト書籍", "author", "テスト著者", "isbn", "ISBN-001"), Map.class);
     }

@@ -7,9 +7,11 @@ interface Props {
   initialData?: MemberRequest;
   onSubmit: (data: MemberRequest) => Promise<void>;
   submitLabel: string;
+  idReadOnly?: boolean;
 }
 
-export default function MemberForm({ initialData, onSubmit, submitLabel }: Props) {
+export default function MemberForm({ initialData, onSubmit, submitLabel, idReadOnly }: Props) {
+  const [id, setId] = useState(initialData?.id ?? "");
   const [name, setName] = useState(initialData?.name ?? "");
   const [email, setEmail] = useState(initialData?.email ?? "");
   const [memberType, setMemberType] = useState<MemberType>(initialData?.memberType ?? "GENERAL");
@@ -19,7 +21,7 @@ export default function MemberForm({ initialData, onSubmit, submitLabel }: Props
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onSubmit({ name, email, memberType });
+      await onSubmit({ id, name, email, memberType });
     } finally {
       setSubmitting(false);
     }
@@ -27,6 +29,17 @@ export default function MemberForm({ initialData, onSubmit, submitLabel }: Props
 
   return (
     <form onSubmit={handleSubmit}>
+      <div className="form-group">
+        <label>会員ID</label>
+        <input
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          required
+          maxLength={7}
+          placeholder="0000001"
+          readOnly={idReadOnly}
+        />
+      </div>
       <div className="form-group">
         <label>名前</label>
         <input value={name} onChange={(e) => setName(e.target.value)} required />

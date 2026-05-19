@@ -48,19 +48,19 @@ export const deleteBook = (id: number) =>
 
 // Members
 export const getMembers = () => request<Member[]>("/api/members");
-export const getMember = (id: number) =>
+export const getMember = (id: string) =>
   request<Member>(`/api/members/${id}`);
 export const createMember = (data: MemberRequest) =>
   request<Member>("/api/members", {
     method: "POST",
     body: JSON.stringify(data),
   });
-export const updateMember = (id: number, data: MemberRequest) =>
+export const updateMember = (id: string, data: MemberRequest) =>
   request<Member>(`/api/members/${id}`, {
     method: "PUT",
     body: JSON.stringify(data),
   });
-export const deleteMember = (id: number) =>
+export const deleteMember = (id: string) =>
   request<void>(`/api/members/${id}`, { method: "DELETE" });
 
 // Loans
@@ -72,3 +72,5 @@ export const borrowBook = (data: LoanRequest) =>
   });
 export const returnBook = (loanId: number) =>
   request<Loan>(`/api/loans/${loanId}/return`, { method: "POST" });
+export const extendLoan = (loanId: number) =>
+  request<Loan>(`/api/loans/${loanId}/extend`, { method: "POST" });

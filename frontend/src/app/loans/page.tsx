@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Book, Loan, Member } from "@/lib/types";
-import { getLoans, getBooks, getMembers, borrowBook, returnBook } from "@/lib/api";
+import { getLoans, getBooks, getMembers, borrowBook, returnBook, extendLoan } from "@/lib/api";
 import ErrorMessage from "@/components/ErrorMessage";
 
 export default function LoansPage() {
@@ -40,7 +40,7 @@ export default function LoansPage() {
   }, []);
 
   const bookName = (id: number) => books.find((b) => b.id === id)?.title ?? `書籍ID: ${id}`;
-  const memberName = (id: number) => members.find((m) => m.id === id)?.name ?? `会員ID: ${id}`;
+  const memberName = (id: string) => members.find((m) => m.id === id)?.name ?? `会員ID: ${id}`;
 
   const availableBooks = books.filter((b) => b.available);
 
@@ -51,7 +51,7 @@ export default function LoansPage() {
     try {
       setError(null);
       await borrowBook({
-        memberId: Number(selectedMemberId),
+        memberId: selectedMemberId,
         bookId: Number(selectedBookId),
       });
       setSelectedMemberId("");
@@ -71,6 +71,16 @@ export default function LoansPage() {
       await fetchAll();
     } catch (e) {
       setError(e instanceof Error ? e.message : "返却に失敗しました");
+    }
+  };
+
+  const handleExtend = async (loanId: number) => {
+    try {
+      setError(null);
+      await extendLoan(loanId);
+      await fetchAll();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "延長に失敗しました");
     }
   };
 
@@ -170,13 +180,23 @@ export default function LoansPage() {
                       <span className="badge badge-available">貸出中</span>
                     )}
                   </td>
-                  <td>
+                  <td style={{ display: "flex", gap: 4 }}>
                     <button
                       className="btn-success btn-sm"
                       onClick={() => handleReturn(loan.id)}
                     >
                       返却
                     </button>
+                    {loan.extended ? (
+                      <span className="badge badge-overdue">延長済</span>
+                    ) : (
+                      <button
+                        className="btn-primary btn-sm"
+                        onClick={() => handleExtend(loan.id)}
+                      >
+                        延長
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

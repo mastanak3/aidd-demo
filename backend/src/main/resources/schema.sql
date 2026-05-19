@@ -24,5 +24,6 @@ CREATE TABLE IF NOT EXISTS loans (
     loan_date DATE NOT NULL,
     due_date DATE NOT NULL,
     return_date DATE,
-    overdue_fee INTEGER NOT NULL DEFAULT 0
+    overdue_fee INTEGER NOT NULL DEFAULT 0,
+    extended BOOLEAN NOT NULL DEFAULT FALSE
 );

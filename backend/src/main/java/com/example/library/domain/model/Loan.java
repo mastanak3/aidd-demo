@@ -30,6 +30,8 @@ public class Loan {
     @Column(name = "overdue_fee")
     private int overdueFee;
 
+    private boolean extended;
+
     public Loan() {
     }
 
@@ -105,5 +107,13 @@ public class Loan {
 
     public void setOverdueFee(int overdueFee) {
         this.overdueFee = overdueFee;
+    }
+
+    public boolean isExtended() {
+        return extended;
+    }
+
+    public void setExtended(boolean extended) {
+        this.extended = extended;
     }
 }

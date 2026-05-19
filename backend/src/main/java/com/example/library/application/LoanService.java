@@ -83,6 +83,12 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
+    public Loan extendLoan(Long loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("貸出記録が見つかりません: ID=" + loanId));
+        throw new UnsupportedOperationException("延長機能は未実装です");
+    }
+
     @Transactional(readOnly = true)
     public List<Loan> findAll() {
         return loanRepository.findAll();

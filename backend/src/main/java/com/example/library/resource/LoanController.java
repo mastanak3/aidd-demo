@@ -39,6 +39,11 @@ public class LoanController {
         return loanService.returnBook(id, bookPost);
     }
 
+    @PostMapping("/{id}/extend")
+    public Loan extendLoan(@PathVariable Long id) {
+        return loanService.extendLoan(id);
+    }
+
     public record LoanRequest(String memberId, Long bookId) {
     }
 }
