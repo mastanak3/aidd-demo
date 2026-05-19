@@ -87,6 +87,44 @@ spec:
       - CreateNamespace=true
 {{- end }}
 
+{{- if .Values.devspaces_image.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ .Release.Name }}-devspaces-image
+  namespace: {{ .Values.argocd.namespace }}
+  labels:
+    demo.redhat.com/application: "field-content"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: {{ .Values.argocd.project }}
+  source:
+    repoURL: {{ .Values.gitops.repoUrl }}
+    targetRevision: {{ .Values.gitops.revision }}
+    path: {{ .Values.gitops.basePath }}/components/devspaces-image
+    helm:
+      valuesObject:
+        devspaces_image:
+          enabled: {{ .Values.devspaces_image.enabled }}
+          name: {{ .Values.devspaces_image.name }}
+          namespace: {{ .Values.devspaces_image.namespace }}
+          build:
+            gitUri: {{ .Values.devspaces_image.build.gitUri }}
+            gitRef: {{ .Values.devspaces_image.build.gitRef }}
+            contextDir: {{ .Values.devspaces_image.build.contextDir }}
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: {{ .Values.devspaces_image.namespace }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+{{- end }}
+
 {{- if .Values.devspaces_instance.enabled }}
 ---
 apiVersion: argoproj.io/v1alpha1

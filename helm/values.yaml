@@ -45,6 +45,18 @@ isbn_service:
     enabled: true
 
 # ============================================================
+# DevSpaces Custom Image - Pre-built tools image with Playwright
+# ============================================================
+devspaces_image:
+  enabled: true
+  name: devspaces-tools
+  namespace: devspaces-tools
+  build:
+    gitUri: "https://github.com/mastanak3/aidd-demo.git"
+    gitRef: "main"
+    contextDir: "devspaces-image"
+
+# ============================================================
 # Dev Space Instance - Created after operators are installed
 # ============================================================
 devspaces_instance:

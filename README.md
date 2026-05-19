@@ -69,9 +69,21 @@ psql -h localhost -U library -d library
 ```bash
 cd backend
 mvn compile            # ビルド
-mvn test               # テスト実行
 mvn spring-boot:run    # 起動 (http://localhost:8080/api/)
 ```
+
+### テストの実行
+
+```bash
+cd backend
+mvn test       # Playwright以外のテスト（単体テスト + API E2E）
+mvn test -Pci  # すべてのテスト（単体 + API E2E + Playwright）
+```
+
+| プロファイル | 対象 | 備考 |
+|------------|------|------|
+| (デフォルト) | 単体 + API E2E | Playwright テストを除外して高速実行 |
+| `-Pci` | すべてのテスト | Playwright ブラウザ E2E テストも含めてすべて実行。CI 環境で使用 |
 
 ### フロントエンドの起動
 

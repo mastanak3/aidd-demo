@@ -1,0 +1,8 @@
+devspaces_image:
+  enabled: true
+  name: devspaces-tools
+  namespace: devspaces-tools
+  build:
+    gitUri: "https://github.com/mastanak3/aidd-demo.git"
+    gitRef: "main"
+    contextDir: "devspaces-image"

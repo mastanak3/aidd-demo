@@ -1,0 +1,25 @@
+{{- if .Values.devspaces_image.enabled }}
+apiVersion: build.openshift.io/v1
+kind: BuildConfig
+metadata:
+  name: {{ .Values.devspaces_image.name }}
+  namespace: {{ .Values.devspaces_image.namespace }}
+  labels:
+    app: {{ .Values.devspaces_image.name }}
+spec:
+  source:
+    type: Git
+    git:
+      uri: {{ .Values.devspaces_image.build.gitUri }}
+      ref: {{ .Values.devspaces_image.build.gitRef }}
+    contextDir: {{ .Values.devspaces_image.build.contextDir }}
+  strategy:
+    type: Docker
+    dockerStrategy: {}
+  output:
+    to:
+      kind: ImageStreamTag
+      name: "{{ .Values.devspaces_image.name }}:latest"
+  triggers:
+    - type: ConfigChange
+{{- end }}

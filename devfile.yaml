@@ -10,7 +10,7 @@ attributes:
 components:
   - name: tools
     container:
-      image: quay.io/devfile/universal-developer-image:ubi9-latest
+      image: image-registry.openshift-image-registry.svc:5000/devspaces-tools/devspaces-tools:latest
       memoryLimit: 4G
       mountSources: true
       endpoints:
@@ -41,6 +41,19 @@ components:
         - name: postgres
           targetPort: 5432
           exposure: internal
+
+  - name: sonarqube
+    container:
+      image: sonarqube:lts-community
+      memoryLimit: 2G
+      env:
+        - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
+          value: "true"
+      endpoints:
+        - name: sonarqube-web
+          targetPort: 9000
+          exposure: public
+          secure: true
 
 commands:
   - id: setup-workspace
@@ -220,6 +233,58 @@ commands:
         fi
 
         wait "$NPM_PID"
+
+        # --- Phase 6: setup SonarQube ---
+        SONAR_URL="http://localhost:9000"
+        SONAR_DEFAULT_PASSWORD="admin"
+        SONAR_NEW_PASSWORD="sonarpass"
+        GATE_NAME="CI Gate"
+
+        echo "Waiting for SonarQube to start..."
+        for i in $(seq 1 60); do
+          status=$(curl -s -f "$SONAR_URL/api/system/status" 2>/dev/null \
+            | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])" 2>/dev/null || true)
+          [ "$status" = "UP" ] && break
+          sleep 5
+        done
+
+        if [ "$status" = "UP" ]; then
+          # Change default password
+          if ! curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" "$SONAR_URL/api/qualitygates/list" >/dev/null 2>&1; then
+            curl -s -f -u "admin:${SONAR_DEFAULT_PASSWORD}" -X POST \
+              "$SONAR_URL/api/users/change_password" \
+              -d "login=admin&previousPassword=${SONAR_DEFAULT_PASSWORD}&password=${SONAR_NEW_PASSWORD}" || true
+          fi
+
+          # Create Quality Gate
+          existing=$(curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" "$SONAR_URL/api/qualitygates/list" \
+            | python3 -c "import sys,json; gates=json.load(sys.stdin).get('qualitygates',[]); print(next((str(g['id']) for g in gates if g['name']=='${GATE_NAME}'),''))" 2>/dev/null || true)
+          if [ -z "$existing" ]; then
+            gate_id=$(curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" -X POST \
+              "$SONAR_URL/api/qualitygates/create" -d "name=${GATE_NAME}" \
+              | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
+          else
+            gate_id="$existing"
+          fi
+
+          # Add conditions and set as default
+          if [ -n "$gate_id" ]; then
+            cond_count=$(curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" "$SONAR_URL/api/qualitygates/show?id=${gate_id}" \
+              | python3 -c "import sys,json; print(len(json.load(sys.stdin).get('conditions',[])))" 2>/dev/null || echo "0")
+            if [ "$cond_count" = "0" ]; then
+              curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" -X POST "$SONAR_URL/api/qualitygates/create_condition" \
+                -d "gateId=${gate_id}&metric=new_coverage&op=LT&error=80" >/dev/null 2>&1 || true
+              curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" -X POST "$SONAR_URL/api/qualitygates/create_condition" \
+                -d "gateId=${gate_id}&metric=new_duplicated_lines_density&op=GT&error=3" >/dev/null 2>&1 || true
+            fi
+            curl -s -f -u "admin:${SONAR_NEW_PASSWORD}" -X POST "$SONAR_URL/api/qualitygates/set_as_default" \
+              -d "id=${gate_id}" >/dev/null 2>&1 || true
+          fi
+          echo "SonarQube setup complete."
+        else
+          echo "WARNING: SonarQube did not start within 5 minutes, skipping setup."
+        fi
+
         echo "=== Workspace setup completed at $(date) ==="
         SETUP_SCRIPT
         chmod +x /tmp/setup-workspace.sh
