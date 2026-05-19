@@ -18,9 +18,23 @@ public class MemberService {
         this.memberRepository = memberRepository;
     }
 
-    public Member create(String id, String name, String email, MemberType memberType) {
+    public Member create(String name, String email, MemberType memberType) {
+        String id = generateMemberId();
         Member member = new Member(id, name, email, memberType);
         return memberRepository.save(member);
+    }
+
+    private String generateMemberId() {
+        List<Member> allMembers = memberRepository.findAll();
+        if (allMembers.isEmpty()) {
+            return "0000001";
+        }
+        String maxId = allMembers.stream()
+                .map(Member::getId)
+                .max(String::compareTo)
+                .orElse("0000000");
+        long nextId = Long.parseLong(maxId) + 1;
+        return String.format("%07d", nextId);
     }
 
     @Transactional(readOnly = true)

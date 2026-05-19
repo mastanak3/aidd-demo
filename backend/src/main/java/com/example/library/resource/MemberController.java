@@ -31,7 +31,7 @@ public class MemberController {
 
     @PostMapping
     public ResponseEntity<Member> create(@RequestBody MemberRequest request) {
-        Member member = memberService.create(request.id(), request.name(), request.email(), request.memberType());
+        Member member = memberService.create(request.name(), request.email(), request.memberType());
         return ResponseEntity.status(HttpStatus.CREATED).body(member);
     }
 
@@ -46,6 +46,6 @@ public class MemberController {
         return ResponseEntity.noContent().build();
     }
 
-    public record MemberRequest(String id, String name, String email, MemberType memberType) {
+    public record MemberRequest(String name, String email, MemberType memberType) {
     }
 }
