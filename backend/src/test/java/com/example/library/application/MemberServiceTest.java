@@ -26,9 +26,9 @@ class MemberServiceTest {
 
     @Test
     void 一般会員を登録できる() {
-        Member member = memberService.create("0000001", "田中太郎", "tanaka@example.com", MemberType.GENERAL);
+        Member member = memberService.create("田中太郎", "tanaka@example.com", MemberType.GENERAL);
 
-        assertEquals("0000001", member.getId());
+        assertNotNull(member.getId());
         assertEquals("田中太郎", member.getName());
         assertEquals("tanaka@example.com", member.getEmail());
         assertEquals(MemberType.GENERAL, member.getMemberType());
@@ -36,14 +36,14 @@ class MemberServiceTest {
 
     @Test
     void プレミアム会員を登録できる() {
-        Member member = memberService.create("0000001", "鈴木花子", "suzuki@example.com", MemberType.PREMIUM);
+        Member member = memberService.create("鈴木花子", "suzuki@example.com", MemberType.PREMIUM);
 
         assertEquals(MemberType.PREMIUM, member.getMemberType());
     }
 
     @Test
     void 会員をIDで検索できる() {
-        Member created = memberService.create("0000001", "佐藤次郎", "sato@example.com", MemberType.GENERAL);
+        Member created = memberService.create("佐藤次郎", "sato@example.com", MemberType.GENERAL);
 
         Member found = memberService.findById(created.getId());
 
@@ -53,8 +53,8 @@ class MemberServiceTest {
 
     @Test
     void 全会員を取得できる() {
-        memberService.create("0000001", "会員A", "a@example.com", MemberType.GENERAL);
-        memberService.create("0000002", "会員B", "b@example.com", MemberType.PREMIUM);
+        memberService.create("会員A", "a@example.com", MemberType.GENERAL);
+        memberService.create("会員B", "b@example.com", MemberType.PREMIUM);
 
         var members = memberService.findAll();
 
@@ -63,7 +63,7 @@ class MemberServiceTest {
 
     @Test
     void 会員を更新できる() {
-        Member created = memberService.create("0000001", "旧名前", "old@example.com", MemberType.GENERAL);
+        Member created = memberService.create("旧名前", "old@example.com", MemberType.GENERAL);
 
         Member updated = memberService.update(created.getId(), "新名前", "new@example.com", MemberType.PREMIUM);
 
@@ -74,7 +74,7 @@ class MemberServiceTest {
 
     @Test
     void 会員を削除できる() {
-        Member created = memberService.create("0000001", "削除対象", "del@example.com", MemberType.GENERAL);
+        Member created = memberService.create("削除対象", "del@example.com", MemberType.GENERAL);
         String id = created.getId();
 
         memberService.delete(id);
