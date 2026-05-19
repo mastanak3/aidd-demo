@@ -18,10 +18,14 @@ public class MemberService {
         this.memberRepository = memberRepository;
     }
 
-    public Member create(String name, String email, MemberType memberType) {
-        String id = generateMemberId();
+    public Member create(String id, String name, String email, MemberType memberType) {
         Member member = new Member(id, name, email, memberType);
         return memberRepository.save(member);
+    }
+
+    public Member create(String name, String email, MemberType memberType) {
+        String id = generateMemberId();
+        return create(id, name, email, memberType);
     }
 
     private String generateMemberId() {

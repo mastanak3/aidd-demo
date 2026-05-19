@@ -27,8 +27,8 @@ public class Loan {
     @Column(name = "return_date")
     private LocalDate returnDate;
 
-    @Column(name = "overdue_fee")
-    private int overdueFee;
+    @Column(name = "rental_fee")
+    private int rentalFee;
 
     private boolean extended;
 
@@ -101,12 +101,12 @@ public class Loan {
         this.returnDate = returnDate;
     }
 
-    public int getOverdueFee() {
-        return overdueFee;
+    public int getRentalFee() {
+        return rentalFee;
     }
 
-    public void setOverdueFee(int overdueFee) {
-        this.overdueFee = overdueFee;
+    public void setRentalFee(int rentalFee) {
+        this.rentalFee = rentalFee;
     }
 
     public boolean isExtended() {

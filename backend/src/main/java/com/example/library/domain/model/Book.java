@@ -14,6 +14,9 @@ public class Book {
     private String isbn;
     private boolean available;
 
+    @Column(name = "is_new_release")
+    private boolean newRelease;
+
     public Book() {
     }
 
@@ -76,5 +79,13 @@ public class Book {
 
     public void setAvailable(boolean available) {
         this.available = available;
+    }
+
+    public boolean isNewRelease() {
+        return newRelease;
+    }
+
+    public void setNewRelease(boolean newRelease) {
+        this.newRelease = newRelease;
     }
 }

@@ -18,7 +18,12 @@ public class BookService {
     }
 
     public Book create(String title, String author, String isbn) {
+        return create(title, author, isbn, false);
+    }
+
+    public Book create(String title, String author, String isbn, boolean newRelease) {
         Book book = new Book(title, author, isbn);
+        book.setNewRelease(newRelease);
         return bookRepository.save(book);
     }
 
@@ -34,10 +39,15 @@ public class BookService {
     }
 
     public Book update(Long id, String title, String author, String isbn) {
+        return update(id, title, author, isbn, false);
+    }
+
+    public Book update(Long id, String title, String author, String isbn, boolean newRelease) {
         Book book = findById(id);
         book.setTitle(title);
         book.setAuthor(author);
         book.setIsbn(isbn);
+        book.setNewRelease(newRelease);
         return bookRepository.save(book);
     }
 

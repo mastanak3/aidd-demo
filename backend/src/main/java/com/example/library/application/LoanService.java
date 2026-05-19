@@ -1,6 +1,7 @@
 package com.example.library.application;
 
 import com.example.library.domain.LendingPolicy;
+import com.example.library.domain.RentalFeeCalculator;
 import com.example.library.domain.model.Book;
 import com.example.library.domain.model.Loan;
 import com.example.library.domain.model.Member;
@@ -51,6 +52,11 @@ public class LoanService {
         bookRepository.save(book);
 
         Loan loan = new Loan(bookId, memberId, loanDate, dueDate);
+        int rentalFee = RentalFeeCalculator.calculateFee(
+                member.getMemberType(),
+                LendingPolicy.getLoanPeriodDays(member.getMemberType()),
+                book.isNewRelease());
+        loan.setRentalFee(rentalFee);
         return loanRepository.save(loan);
     }
 
@@ -65,9 +71,6 @@ public class LoanService {
         Book book = bookRepository.findById(loan.getBookId())
                 .orElseThrow(() -> new IllegalStateException("書籍が見つかりません: ID=" + loan.getBookId()));
 
-        Member member = memberRepository.findById(loan.getMemberId())
-                .orElseThrow(() -> new IllegalStateException("会員が見つかりません: ID=" + loan.getMemberId()));
-
         LocalDate returnDate = LocalDate.now();
         if (isBookPostReturn) {
             returnDate = returnDate.minusDays(1);
@@ -75,9 +78,6 @@ public class LoanService {
 
         loan.returnBook(returnDate);
         book.returnBook();
-
-        int overdueFee = LendingPolicy.calculateOverdueFee(member.getMemberType(), loan.getDueDate(), returnDate);
-        loan.setOverdueFee(overdueFee);
 
         bookRepository.save(book);
         return loanRepository.save(loan);

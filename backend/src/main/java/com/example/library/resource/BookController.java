@@ -30,13 +30,13 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<Book> create(@RequestBody BookRequest request) {
-        Book book = bookService.create(request.title(), request.author(), request.isbn());
+        Book book = bookService.create(request.title(), request.author(), request.isbn(), request.newRelease());
         return ResponseEntity.status(HttpStatus.CREATED).body(book);
     }
 
     @PutMapping("/{id}")
     public Book update(@PathVariable Long id, @RequestBody BookRequest request) {
-        return bookService.update(id, request.title(), request.author(), request.isbn());
+        return bookService.update(id, request.title(), request.author(), request.isbn(), request.newRelease());
     }
 
     @DeleteMapping("/{id}")
@@ -45,6 +45,6 @@ public class BookController {
         return ResponseEntity.noContent().build();
     }
 
-    public record BookRequest(String title, String author, String isbn) {
+    public record BookRequest(String title, String author, String isbn, boolean newRelease) {
     }
 }

@@ -6,12 +6,14 @@ export interface Book {
   author: string;
   isbn: string;
   available: boolean;
+  newRelease: boolean;
 }
 
 export interface BookRequest {
   title: string;
   author: string;
   isbn: string;
+  newRelease: boolean;
 }
 
 export interface Member {
@@ -35,7 +37,7 @@ export interface Loan {
   loanDate: string;
   dueDate: string;
   returnDate: string | null;
-  overdueFee: number;
+  rentalFee: number;
   extended: boolean;
 }
 

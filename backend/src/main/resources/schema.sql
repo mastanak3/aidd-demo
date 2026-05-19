@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS books (
     title VARCHAR(255) NOT NULL,
     author VARCHAR(255) NOT NULL,
     isbn VARCHAR(20) NOT NULL,
-    available BOOLEAN NOT NULL DEFAULT TRUE
+    available BOOLEAN NOT NULL DEFAULT TRUE,
+    is_new_release BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS members (
@@ -24,6 +25,6 @@ CREATE TABLE IF NOT EXISTS loans (
     loan_date DATE NOT NULL,
     due_date DATE NOT NULL,
     return_date DATE,
-    overdue_fee INTEGER NOT NULL DEFAULT 0,
+    rental_fee INTEGER NOT NULL DEFAULT 0,
     extended BOOLEAN NOT NULL DEFAULT FALSE
 );

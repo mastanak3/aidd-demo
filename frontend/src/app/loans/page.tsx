@@ -161,6 +161,7 @@ export default function LoansPage() {
                 <th>会員</th>
                 <th>貸出日</th>
                 <th>返却期限</th>
+                <th>貸出料金</th>
                 <th>状態</th>
                 <th>操作</th>
               </tr>
@@ -173,6 +174,7 @@ export default function LoansPage() {
                   <td>{memberName(loan.memberId)}</td>
                   <td>{loan.loanDate}</td>
                   <td>{loan.dueDate}</td>
+                  <td>{loan.rentalFee}円</td>
                   <td>
                     {isOverdue(loan) ? (
                       <span className="badge badge-overdue">延滞</span>
@@ -219,7 +221,7 @@ export default function LoansPage() {
                 <th>貸出日</th>
                 <th>返却期限</th>
                 <th>返却日</th>
-                <th>延滞料金</th>
+                <th>貸出料金</th>
               </tr>
             </thead>
             <tbody>
@@ -231,7 +233,7 @@ export default function LoansPage() {
                   <td>{loan.loanDate}</td>
                   <td>{loan.dueDate}</td>
                   <td>{loan.returnDate}</td>
-                  <td>{loan.overdueFee}円</td>
+                  <td>{loan.rentalFee}円</td>
                 </tr>
               ))}
             </tbody>

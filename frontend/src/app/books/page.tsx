@@ -67,7 +67,12 @@ export default function BooksPage() {
             {books.map((book) => (
               <tr key={book.id}>
                 <td>{book.id}</td>
-                <td>{book.title}</td>
+                <td>
+                  {book.title}
+                  {book.newRelease && (
+                    <span className="badge badge-overdue" style={{ marginLeft: 8 }}>新刊</span>
+                  )}
+                </td>
                 <td>{book.author}</td>
                 <td>{book.isbn}</td>
                 <td>

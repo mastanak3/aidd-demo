@@ -36,7 +36,7 @@ export default function EditBookPage() {
       <ErrorMessage message={error} />
       {book && (
         <BookForm
-          initialData={{ title: book.title, author: book.author, isbn: book.isbn }}
+          initialData={{ title: book.title, author: book.author, isbn: book.isbn, newRelease: book.newRelease }}
           submitLabel="更新"
           onSubmit={async (data) => {
             try {
