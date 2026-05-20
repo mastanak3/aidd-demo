@@ -13,10 +13,6 @@ public class TestDatabaseCleaner {
     }
 
     public void cleanAll() {
-        jdbcTemplate.execute("SET session_replication_role = 'replica'");
-        jdbcTemplate.execute("TRUNCATE TABLE loans");
-        jdbcTemplate.execute("TRUNCATE TABLE books RESTART IDENTITY CASCADE");
-        jdbcTemplate.execute("TRUNCATE TABLE members RESTART IDENTITY CASCADE");
-        jdbcTemplate.execute("SET session_replication_role = 'origin'");
+        jdbcTemplate.execute("TRUNCATE TABLE loans, books, members RESTART IDENTITY CASCADE");
     }
 }
