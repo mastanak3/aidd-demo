@@ -26,10 +26,13 @@ DevContainer内のターミナルで以下を実行します。
 
 ```bash
 export GCP_PROJECT_ID=your-project-id
+export GCP_QUOTA_PROJECT=your-quota-project-id
 ```
 
-**重要:** `your-project-id` を実際のGCPプロジェクトIDに置き換えてください。
-この情報は認証情報のため、gitにコミットしないでください。
+**重要:**
+- `your-project-id` を実際のGCPプロジェクトIDに置き換えてください
+- `your-quota-project-id` を実際のQuota用プロジェクトIDに置き換えてください（未設定の場合は `GCP_PROJECT_ID` が使用されます）
+- これらの情報は認証情報のため、gitにコミットしないでください
 
 #### 2.2 セットアップスクリプトの実行
 
@@ -41,7 +44,7 @@ source ./setup-claude.local.sh
 
 1. **GCloud初期化**: プロジェクトIDを設定
 2. **Application Default認証**: ブラウザ経由で認証（ブラウザが開きます）
-3. **Quota Projectの設定**: `REDACTED-QUOTA-PROJECT` を設定
+3. **Quota Projectの設定**: `GCP_QUOTA_PROJECT`（未設定時は `GCP_PROJECT_ID`）を設定
 4. **環境変数の設定**: `~/.bashrc` に必要な環境変数を追加
    - `GCP_PROJECT_ID`
    - `CLAUDE_CODE_USE_VERTEX=1`
@@ -102,6 +105,7 @@ source ~/.bashrc
 
 ```bash
 export GCP_PROJECT_ID=your-project-id
+export GCP_QUOTA_PROJECT=your-quota-project-id
 source ./setup-claude.local.sh
 ```
 
@@ -112,6 +116,7 @@ source ./setup-claude.local.sh
 ```bash
 gcloud auth application-default revoke
 export GCP_PROJECT_ID=your-project-id
+export GCP_QUOTA_PROJECT=your-quota-project-id
 source ./setup-claude.local.sh
 ```
 
