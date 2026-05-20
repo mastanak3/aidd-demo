@@ -15,7 +15,7 @@ components:
       mountSources: true
       endpoints:
         - name: gitea-web
-          targetPort: 3000
+          targetPort: 3001
           exposure: public
           secure: true
       env:
@@ -72,7 +72,7 @@ commands:
 
         GITEA_DIR="${HOME}/.gitea"
         RUNNER_DIR="${HOME}/.act_runner"
-        GITEA_URL="http://localhost:3000"
+        GITEA_URL="http://localhost:3001"
         RUNNER_TOKEN="workshop-runner-token-2024-devspaces"
         ADMIN_USER="gitea-admin"
         ADMIN_PASS="password123"
@@ -111,7 +111,7 @@ commands:
         GITEA_ROOT_URL="${GITEA_EXTERNAL_URL:-http://localhost:3000}"
         cat > "${GITEA_DIR}/custom/conf/app.ini" << INIEOF
         [server]
-        HTTP_PORT = 3000
+        HTTP_PORT = 3001
         HTTP_ADDR = 0.0.0.0
         ROOT_URL = ${GITEA_ROOT_URL}/
 
@@ -184,7 +184,7 @@ commands:
         # --- Phase 4: push to Gitea ---
         cd /projects/aidd-demo
         git config credential.helper store
-        echo "http://${ADMIN_USER}:${ADMIN_PASS}@localhost:3000" > ~/.git-credentials
+        echo "http://${ADMIN_USER}:${ADMIN_PASS}@localhost:3001" > ~/.git-credentials
         GITEA_REPO_URL="${GITEA_URL}/${ADMIN_USER}/${REPO_NAME}.git"
         CURRENT_ORIGIN=$(git remote get-url origin 2>/dev/null || echo "")
         if [ -n "$CURRENT_ORIGIN" ] && [ "$CURRENT_ORIGIN" != "$GITEA_REPO_URL" ]; then
@@ -218,7 +218,7 @@ commands:
         spec:
           host: gitea-web.${ROUTE_HOST#*.}
           port:
-            targetPort: 3000
+            targetPort: 3001
           tls:
             termination: edge
             insecureEdgeTerminationPolicy: Redirect

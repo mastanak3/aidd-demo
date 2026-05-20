@@ -26,4 +26,6 @@ RUN dnf install -y --nodocs \
 
 USER 10001
 
+RUN bash -lc "sdk default java 21.0.5-tem && sdk default maven 3.9.15"
+
 RUN npx playwright@1.52.0 install chromium
