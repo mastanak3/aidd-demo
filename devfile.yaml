@@ -79,6 +79,19 @@ commands:
         ADMIN_EMAIL="admin@example.com"
         REPO_NAME="aidd-demo"
 
+        # --- Phase 0: initialize PostgreSQL ---
+        echo "Waiting for PostgreSQL..."
+        for i in $(seq 1 30); do
+          pg_isready -h localhost -p 5432 -U library >/dev/null 2>&1 && break
+          sleep 2
+        done
+        if pg_isready -h localhost -p 5432 -U library >/dev/null 2>&1; then
+          PGPASSWORD=library psql -h localhost -U library -d library -f /projects/aidd-demo/db/init.sql >/dev/null 2>&1
+          echo "PostgreSQL initialized with schema and data."
+        else
+          echo "WARNING: PostgreSQL did not start within 60 seconds, skipping DB init."
+        fi
+
         # --- Phase 1: parallel downloads ---
         npm install -g @anthropic-ai/claude-code &
         NPM_PID=$!
