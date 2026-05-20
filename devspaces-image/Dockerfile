@@ -35,3 +35,6 @@ USER 0
 RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH && chmod 777 $PLAYWRIGHT_BROWSERS_PATH
 USER 10001
 RUN npx playwright@1.52.0 install chromium
+USER 0
+RUN chmod -R 777 $npm_config_cache
+USER 10001
