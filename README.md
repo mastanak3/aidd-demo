@@ -1,62 +1,42 @@
 # aidd-demo
 
-AI 駆動開発ワークショップ用の**図書貸出管理システム**サンプルアプリケーションです。
+ワークショップ用の**図書貸出管理システム**サンプルアプリケーションです。
 書籍・会員の管理と貸出/返却を行う Web アプリケーションで構成されています。
 
 ## 技術スタック
 
 | レイヤー | 技術 |
 |---------|------|
-| フロントエンド | Next.js 16 / React 19 / TypeScript 5 |
-| バックエンド | Java 21 / Spring Boot 3.4 / Spring Data JPA |
+| フロントエンド | Next.js 16.2 / React 19.2 / TypeScript 5 |
+| バックエンド | Java 21 / Spring Boot 3.4.5 / Spring Data JPA |
 | データベース | PostgreSQL 16 |
 | 外部サービス | ISBN Lookup Service (Python / FastAPI) |
 | コード品質 | SonarQube (Community Edition) / JaCoCo |
+| E2E テスト | Playwright 1.52 |
 | ビルド | Maven 3.x / npm |
-| 開発環境 | Dev Containers (Docker Compose) |
+| 開発環境 | OpenShift DevSpaces |
 
 ## ディレクトリ構成
 
 ```
-backend/       Java バックエンド (REST API)
-frontend/      Next.js フロントエンド
-isbn-service/  ISBN 検索用の外部サービス (FastAPI)
-docs/          ワークショップ資料・開発ガイド
-helm/          Helm チャート
-.devcontainer/ Dev Container 設定
+backend/          Java バックエンド (REST API)
+frontend/         Next.js フロントエンド
+isbn-service/     ISBN 検索用の外部サービス (FastAPI)
+docs/             ワークショップ資料・開発ガイド
+helm/             Helm チャート (OpenShift デプロイ用)
+devspaces-image/  DevSpaces カスタムコンテナイメージ
+.gitea/           Gitea (ワークショップ用 Git サーバー) 設定
 ```
 
 ## 開発環境のセットアップ
 
-### Dev Container（推奨）
-
-VS Code で **Dev Containers: Reopen in Container** を実行すると、以下のサービスが自動起動します。
-
-| サービス | ポート | 用途 |
-|---------|-------|------|
-| app | — | 開発コンテナ (Java 21 / Maven / Node.js) |
-| db | 5432 | PostgreSQL 16 |
-| sonarqube | 9000 | SonarQube (静的解析) |
-
 ### DevSpaces（devfile.yaml）
 
-DevSpaces を利用する場合、`devfile.yaml` 内の `ANTHROPIC_VERTEX_PROJECT_ID` にGCPプロジェクトIDを設定してください。
+OpenShift DevSpaces を利用する場合、ワークスペース起動時に以下が自動セットアップされます。
 
-```yaml
-env:
-  - name: ANTHROPIC_VERTEX_PROJECT_ID
-    value: "your-gcp-project-id"  # 実際のGCPプロジェクトIDに置き換える
-```
-
-**注意:** この値は機密情報のため、変更後のファイルをgitにコミットしないでください。
-
-### ローカル環境の前提条件
-
-Dev Container を使わない場合は以下が必要です。
-
-- Java 21 / Maven 3.x
-- Node.js 18 以上 / npm
-- PostgreSQL 16
+- **Gitea** (ワークショップ用 Git サーバー / ポート 3000)
+- **PostgreSQL 16** (ポート 5432)
+- **SonarQube** (ポート 9000)
 
 ### データベース
 
@@ -75,6 +55,14 @@ psql -h localhost -U library -d library
 ```
 
 スキーマ（`books`, `members`, `loans` テーブル）はバックエンド起動時に自動作成されます。
+
+#### テーブル概要
+
+| テーブル | 主なカラム |
+|---------|-----------|
+| books | id, title, author, isbn, available, is_new_release |
+| members | id (7桁), name, email, member_type (GENERAL / PREMIUM) |
+| loans | id, book_id, member_id, loan_date, due_date, return_date, rental_fee, extended |
 
 ### バックエンドの起動
 
@@ -154,18 +142,48 @@ mvn clean verify sonar:sonar -Dsonar.login=admin -Dsonar.password=sonarpass
 
 http://localhost:9000 のダッシュボードでプロジェクト **Library Management System** の解析結果（バグ、脆弱性、コードスメル、カバレッジ等）を確認できます。
 
+## 貸出ルール
+
+| 会員種別 | 最大同時貸出数 | 貸出期間 |
+|---------|-------------|---------|
+| GENERAL (一般) | 3冊 | 14日間 |
+| PREMIUM (プレミアム) | 10冊 | 30日間 |
+
 ## API エンドポイント
+
+### 書籍 (Books)
 
 | メソッド | パス | 説明 |
 |---------|------|------|
 | GET | /api/books | 書籍一覧 |
+| GET | /api/books/{id} | 書籍詳細 |
 | POST | /api/books | 書籍登録 |
 | PUT | /api/books/{id} | 書籍更新 |
 | DELETE | /api/books/{id} | 書籍削除 |
+
+### 会員 (Members)
+
+| メソッド | パス | 説明 |
+|---------|------|------|
 | GET | /api/members | 会員一覧 |
+| GET | /api/members/{id} | 会員詳細 |
 | POST | /api/members | 会員登録 |
 | PUT | /api/members/{id} | 会員更新 |
 | DELETE | /api/members/{id} | 会員削除 |
+
+### 貸出 (Loans)
+
+| メソッド | パス | 説明 |
+|---------|------|------|
 | GET | /api/loans | 貸出一覧 |
+| GET | /api/loans/{id} | 貸出詳細 |
 | POST | /api/loans | 貸出実行 |
 | POST | /api/loans/{id}/return | 返却 |
+| POST | /api/loans/{id}/extend | 貸出延長 |
+
+### ISBN 検索 (外部サービス)
+
+| メソッド | パス | 説明 |
+|---------|------|------|
+| GET | /api/isbn-lookup?title={title} | タイトルで ISBN 検索 |
+| GET | /health | ヘルスチェック |
