@@ -10,11 +10,10 @@
 
 | ファイル | パッケージ / パス | ステップ |
 |---------|-----------------|---------|
-| `ExtensionResult.java` | `domain/model/` | 2 |
 | `LoanExtensionPort.java` | `domain/` | 2 |
 | `FakeLoanExtensionPort.java` | `src/test` ─ `domain/` | 2 |
 | `LoanExtensionPortTest.java` | `src/test` ─ `domain/` | 2 |
-| `ExternalLoanExtensionAdapter.java` | `infrastructure/` | 4 |
+| `DatabaseLoanExtensionAdapter.java` | `infrastructure/` | 4 |
 
 ### 変更
 
@@ -22,7 +21,6 @@
 |---------|---------|---------|
 | `LoanService.java` | `LoanExtensionPort` の注入と `extendLoan()` の実装 | 3 |
 | `LoanServiceTest.java` | `@TestConfiguration` 追加、テストケース2件追加 | 3 |
-| `application.properties` | `extension.service.url` 追加 | 4 |
 
 ---
 
@@ -30,26 +28,15 @@
 
 ### 期待されるコード
 
-#### `ExtensionResult.java`
-
-```java
-package com.example.library.domain.model;
-
-public record ExtensionResult(String extensionId, String status) {
-}
-```
-
 #### `LoanExtensionPort.java`
 
 ```java
 package com.example.library.domain;
 
-import com.example.library.domain.model.ExtensionResult;
-
 import java.time.LocalDate;
 
 public interface LoanExtensionPort {
-    ExtensionResult register(String memberId, Long loanId, LocalDate newDueDate);
+    void saveExtension(Long loanId, LocalDate newDueDate);
 }
 ```
 
@@ -58,25 +45,37 @@ public interface LoanExtensionPort {
 ```java
 package com.example.library.domain;
 
-import com.example.library.domain.model.ExtensionResult;
-
 import java.time.LocalDate;
 
 public class FakeLoanExtensionPort implements LoanExtensionPort {
 
-    private ExtensionResult resultToReturn = new ExtensionResult("EXT-00001", "REGISTERED");
+    private boolean called = false;
+    private Long lastLoanId;
+    private LocalDate lastNewDueDate;
 
     @Override
-    public ExtensionResult register(String memberId, Long loanId, LocalDate newDueDate) {
-        return resultToReturn;
+    public void saveExtension(Long loanId, LocalDate newDueDate) {
+        this.called = true;
+        this.lastLoanId = loanId;
+        this.lastNewDueDate = newDueDate;
     }
 
-    public void setResultToReturn(ExtensionResult result) {
-        this.resultToReturn = result;
+    public boolean wasCalled() {
+        return called;
+    }
+
+    public Long getLastLoanId() {
+        return lastLoanId;
+    }
+
+    public LocalDate getLastNewDueDate() {
+        return lastNewDueDate;
     }
 
     public void reset() {
-        this.resultToReturn = new ExtensionResult("EXT-00001", "REGISTERED");
+        this.called = false;
+        this.lastLoanId = null;
+        this.lastNewDueDate = null;
     }
 }
 ```
@@ -86,7 +85,6 @@ public class FakeLoanExtensionPort implements LoanExtensionPort {
 ```java
 package com.example.library.domain;
 
-import com.example.library.domain.model.ExtensionResult;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -96,14 +94,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class LoanExtensionPortTest {
 
     @Test
-    void 延長を外部サービスに登録するとExtensionResultが返る() {
+    void 延長データの保存が正しい引数で呼び出される() {
         FakeLoanExtensionPort fake = new FakeLoanExtensionPort();
-        fake.setResultToReturn(new ExtensionResult("EXT-12345", "REGISTERED"));
 
-        ExtensionResult result = fake.register("0000001", 1L, LocalDate.of(2025, 2, 1));
+        fake.saveExtension(1L, LocalDate.of(2025, 2, 8));
 
-        assertEquals("EXT-12345", result.extensionId());
-        assertEquals("REGISTERED", result.status());
+        assertTrue(fake.wasCalled());
+        assertEquals(1L, fake.getLastLoanId());
+        assertEquals(LocalDate.of(2025, 2, 8), fake.getLastNewDueDate());
     }
 }
 ```
@@ -111,7 +109,8 @@ class LoanExtensionPortTest {
 ### テスト実行結果
 
 ```
-mvn test -pl backend -Dtest="*LoanExtensionPortTest"
+cd backend
+mvn test -Dtest="*LoanExtensionPortTest"
 ```
 
 ```
@@ -124,14 +123,14 @@ BUILD SUCCESS
 - **Red フェーズでコンパイルエラーが出て戸惑う参加者がいる場合:**
   「TDDではテストが先なので、まだ存在しないクラスを参照してコンパイルエラーになるのは正常です。次の Green フェーズでプロダクションコードを作ってエラーを解消します」と説明する。
 
-- **`record` を知らない参加者がいる場合:**
-  `record` は Java 16 から導入されたデータ保持用のクラス宣言。コンストラクタ、getter、`equals`、`hashCode`、`toString` が自動生成される。通常の `class` で書いても問題ない。
-
 - **フェイクの設計について質問があった場合:**
-  フェイクの設計に正解は1つではない。コンストラクタで振る舞いを渡す方式、setter で後から設定する方式など複数ある。ここでは setter 方式を採用しているが、他の方式でも構わない。ブラックリスト課題のフェイクとは異なり、例外をスローさせる機能は不要（フェイルオープンがないため）。
+  フェイクの設計に正解は1つではない。ここでは「呼び出しを記録する」方式を採用している。ポートが `void` メソッドのため、戻り値ではなく「正しい引数で呼ばれたか」を検証する。
 
 - **テストケースが1件しかないことについて質問があった場合:**
-  ドメイン層のテストでは、フェイクが正しく `ExtensionResult` を返すことだけを確認すれば十分。エラーケース（返却済み・延長済み）のテストはステップ3のサービス層で行う。
+  ドメイン層のテストでは、フェイクが正しく呼び出しを記録することだけを確認すれば十分。エラーケース（返却済み・延長済み）のテストはステップ3のサービス層で行う。
+
+- **ポートが `void` であることについて質問があった場合:**
+  ポートの役割は「延長データをDBに保存する」こと。サービス側がエンティティの状態変更（`dueDate` + 7日、`extended` = true）と保存を行い、ポートは追加のDB操作（延長の記録）を担当する。`void` にすることで、サービスがエンティティの状態を完全に管理でき、フェイクとの組み合わせでもテストが正しく動作する。
 
 ---
 
@@ -146,6 +145,7 @@ package com.example.library.application;
 
 import com.example.library.domain.LendingPolicy;
 import com.example.library.domain.LoanExtensionPort;
+import com.example.library.domain.RentalFeeCalculator;
 import com.example.library.domain.model.Book;
 import com.example.library.domain.model.Loan;
 import com.example.library.domain.model.Member;
@@ -201,6 +201,11 @@ public class LoanService {
         bookRepository.save(book);
 
         Loan loan = new Loan(bookId, memberId, loanDate, dueDate);
+        int rentalFee = RentalFeeCalculator.calculateFee(
+                member.getMemberType(),
+                LendingPolicy.getLoanPeriodDays(member.getMemberType()),
+                book.isNewRelease());
+        loan.setRentalFee(rentalFee);
         return loanRepository.save(loan);
     }
 
@@ -215,9 +220,6 @@ public class LoanService {
         Book book = bookRepository.findById(loan.getBookId())
                 .orElseThrow(() -> new IllegalStateException("書籍が見つかりません: ID=" + loan.getBookId()));
 
-        Member member = memberRepository.findById(loan.getMemberId())
-                .orElseThrow(() -> new IllegalStateException("会員が見つかりません: ID=" + loan.getMemberId()));
-
         LocalDate returnDate = LocalDate.now();
         if (isBookPostReturn) {
             returnDate = returnDate.minusDays(1);
@@ -225,9 +227,6 @@ public class LoanService {
 
         loan.returnBook(returnDate);
         book.returnBook();
-
-        int overdueFee = LendingPolicy.calculateOverdueFee(member.getMemberType(), loan.getDueDate(), returnDate);
-        loan.setOverdueFee(overdueFee);
 
         bookRepository.save(book);
         return loanRepository.save(loan);
@@ -249,10 +248,7 @@ public class LoanService {
         loan.setDueDate(loan.getDueDate().plusDays(7));
         loan.setExtended(true);
 
-        Member member = memberRepository.findById(loan.getMemberId())
-                .orElseThrow(() -> new IllegalStateException("会員が見つかりません: ID=" + loan.getMemberId()));
-
-        loanExtensionPort.register(member.getId(), loanId, loan.getDueDate());
+        loanExtensionPort.saveExtension(loanId, loan.getDueDate());
 
         return loanRepository.save(loan);
     }
@@ -290,6 +286,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -331,7 +329,7 @@ class LoanServiceTest {
     void setUp() {
         dbCleaner.cleanAll();
         fakeLoanExtensionPort.reset();                         // ← 追加
-        generalMember = memberService.create("0000001", "田中太郎", "tanaka@example.com", MemberType.GENERAL);
+        generalMember = memberService.create("田中太郎", "tanaka@example.com", MemberType.GENERAL);
         book = bookService.create("テスト駆動開発", "Kent Beck", "978-4-274-21788-0");
     }
 
@@ -360,7 +358,7 @@ class LoanServiceTest {
     void 貸出中の書籍は借りられない() {
         loanService.borrowBook(generalMember.getId(), book.getId());
 
-        Member anotherMember = memberService.create("0000002", "鈴木", "suzuki@example.com", MemberType.GENERAL);
+        Member anotherMember = memberService.create("鈴木", "suzuki@example.com", MemberType.GENERAL);
         assertThrows(IllegalStateException.class,
                 () -> loanService.borrowBook(anotherMember.getId(), book.getId()));
     }
@@ -396,7 +394,7 @@ class LoanServiceTest {
 
     @Test
     void プレミアム会員は10冊まで借りられる() {
-        Member premiumMember = memberService.create("0000002", "高橋", "takahashi@example.com", MemberType.PREMIUM);
+        Member premiumMember = memberService.create("高橋", "takahashi@example.com", MemberType.PREMIUM);
 
         for (int i = 0; i < 10; i++) {
             Book b = bookService.create("書籍" + i, "著者" + i, "ISBN-" + i);
@@ -482,7 +480,8 @@ class LoanServiceTest {
 ### テスト実行結果
 
 ```
-mvn test -pl backend -Dtest="*LoanServiceTest"
+cd backend
+mvn test -Dtest="*LoanServiceTest"
 ```
 
 ```
@@ -498,14 +497,14 @@ BUILD SUCCESS
 - **`extendLoan()` のスタブについて:**
   現在の `extendLoan()` は `UnsupportedOperationException` をスローするスタブ状態になっている。参加者はこのスタブを実装に置き換える。スタブ内で `loan` 変数が使われずに例外をスローしている点は、SonarQube で未使用変数として指摘される可能性がある。
 
-- **`borrowBook()` は変更しないことの説明:**
-  ブラックリスト課題とは異なり、`borrowBook()` メソッドには一切変更を加えない。変更するのは `extendLoan()` メソッドのみ。`LoanExtensionPort` はコンストラクタで注入されるが、`borrowBook()` や `returnBook()` からは使わない。
+- **サービスがエンティティを変更してから保存することの説明:**
+  `extendLoan()` では、サービスが `loan.setDueDate()` と `loan.setExtended(true)` でエンティティの状態を変更し、`loanRepository.save(loan)` でDBに保存する。ポート（`loanExtensionPort.saveExtension()`）はその**後**に呼ばれ、追加のDB操作を行う。この設計により、テスト時にフェイク（何もしないポート）を使っても、サービスの `loanRepository.save()` でDBが正しく更新される。
 
-- **フェイルオープンがないことについて質問があった場合:**
-  この課題では外部サービスの障害時にフェイルオープンしない（つまり外部サービスが失敗したら延長も失敗する）。これはブラックリスト課題との重要な違い。延長登録は書き込み操作であり、外部サービスに登録されずに延長を許可すると整合性が失われるため、フェイルオープンは適切でない。
+- **`borrowBook()` は変更しないことの説明:**
+  `borrowBook()` メソッドには一切変更を加えない。変更するのは `extendLoan()` メソッドのみ。`LoanExtensionPort` はコンストラクタで注入されるが、`borrowBook()` や `returnBook()` からは使わない。
 
 - **`@Primary` の役割について質問があった場合:**
-  ステップ4で `ExternalLoanExtensionAdapter`（`@Component`）を追加すると、`LoanExtensionPort` のBeanが2つ存在することになる。`@Primary` を付けると、テスト時にはフェイクが優先される。ステップ3時点では `ExternalLoanExtensionAdapter` がまだ存在しないため `@Primary` は不要だが、先に付けておくことでステップ4でのトラブルを防げる。
+  ステップ4で `DatabaseLoanExtensionAdapter`（`@Component`）を追加すると、`LoanExtensionPort` のBeanが2つ存在することになる。`@Primary` を付けると、テスト時にはフェイクが優先される。ステップ3時点では `DatabaseLoanExtensionAdapter` がまだ存在しないため `@Primary` は不要だが、先に付けておくことでステップ4でのトラブルを防げる。
 
 ---
 
@@ -520,7 +519,6 @@ package com.example.library.resource;
 
 import com.example.library.PlaywrightTestBase;
 import com.example.library.domain.LoanExtensionPort;
-import com.example.library.domain.model.ExtensionResult;
 import com.microsoft.playwright.options.AriaRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -543,8 +541,7 @@ class LoanExtensionPlaywrightTest extends PlaywrightTestBase {
         @Bean
         @Primary
         public LoanExtensionPort loanExtensionPort() {
-            return (memberId, loanId, newDueDate) ->
-                    new ExtensionResult("EXT-TEST-001", "REGISTERED");
+            return (loanId, newDueDate) -> {};
         }
     }
 
@@ -593,58 +590,43 @@ class LoanExtensionPlaywrightTest extends PlaywrightTestBase {
 }
 ```
 
-#### `ExternalLoanExtensionAdapter.java`（新規）
+#### `DatabaseLoanExtensionAdapter.java`（新規）
 
 ```java
 package com.example.library.infrastructure;
 
 import com.example.library.domain.LoanExtensionPort;
-import com.example.library.domain.model.ExtensionResult;
-import org.springframework.beans.factory.annotation.Value;
+import com.example.library.domain.model.Loan;
+import com.example.library.domain.repository.LoanRepository;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
-import java.util.Map;
 
 @Component
-public class ExternalLoanExtensionAdapter implements LoanExtensionPort {
+public class DatabaseLoanExtensionAdapter implements LoanExtensionPort {
 
-    private final RestClient restClient;
+    private final LoanRepository loanRepository;
 
-    public ExternalLoanExtensionAdapter(@Value("${extension.service.url}") String baseUrl) {
-        this.restClient = RestClient.builder()
-                .baseUrl(baseUrl)
-                .build();
+    public DatabaseLoanExtensionAdapter(LoanRepository loanRepository) {
+        this.loanRepository = loanRepository;
     }
 
     @Override
-    public ExtensionResult register(String memberId, Long loanId, LocalDate newDueDate) {
-        return restClient.post()
-                .uri("/api/extensions")
-                .body(Map.of(
-                        "memberId", memberId,
-                        "loanId", loanId,
-                        "newDueDate", newDueDate.toString()
-                ))
-                .retrieve()
-                .body(ExtensionResult.class);
+    public void saveExtension(Long loanId, LocalDate newDueDate) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new IllegalArgumentException("貸出記録が見つかりません: ID=" + loanId));
+        loan.setDueDate(newDueDate);
+        loan.setExtended(true);
+        loanRepository.save(loan);
     }
 }
-```
-
-#### `application.properties`（追記）
-
-```properties
-# 末尾に追加
-extension.service.url=${EXTENSION_SERVICE_URL:http://localhost:8081}
 ```
 
 ### テスト実行結果
 
 ```
 # ユニットテスト + 統合テスト
-mvn test -pl backend
+mvn test
 ```
 
 ```
@@ -654,7 +636,7 @@ BUILD SUCCESS
 
 ```
 # Playwrightテストを含む全テスト
-mvn test -pl backend -Dsurefire.excludedGroups=""
+mvn test -Dsurefire.excludedGroups=""
 ```
 
 ```
@@ -669,20 +651,17 @@ BUILD SUCCESS
 - **Playwright テストはコピー＆ペーストであることの説明:**
   E2Eテストコードは参加者が自分で書くのではなく、課題ドキュメントからコピー＆ペーストで作成する。Playwright の詳細な使い方を覚えることがこの課題の主目的ではなく、テストピラミッドの中でE2Eテストがどのような位置づけにあるかを理解してもらうのが狙い。
 
+- **Playwright テストのフェイクが `(loanId, newDueDate) -> {}` と何もしないことについて:**
+  サービスの `extendLoan()` がエンティティの変更と `loanRepository.save()` を行うため、ポートが何もしなくてもDBは正しく更新される。フェイクの役割は「本物のアダプターの副作用を防ぐ」こと。
+
 - **`@TestConfiguration` と `@Primary` の組み合わせ:**
-  `ExternalLoanExtensionAdapter`（`@Component`）と `@TestConfiguration` で定義したラムダBeanの2つが `LoanExtensionPort` を実装している。`@Primary` によりテスト時はフェイクが優先される。
+  `DatabaseLoanExtensionAdapter`（`@Component`）と `@TestConfiguration` で定義したラムダBeanの2つが `LoanExtensionPort` を実装している。`@Primary` によりテスト時はフェイクが優先される。
 
-- **Playwright テストの `@TestConfiguration` の書き方について:**
-  `LoanServiceTest` では `FakeLoanExtensionPort` クラスをBeanとして登録しているが、Playwright テストではラムダ式で `LoanExtensionPort` を直接実装している。どちらの方式でも動作する。ラムダ式の方がシンプルだが、テストごとに振る舞いを変えたい場合は `FakeLoanExtensionPort` を使う方が柔軟。
-
-- **`ExternalLoanExtensionAdapter` がPOSTを使うことについて:**
-  ブラックリスト照会（GET）とは異なり、延長登録は書き込み操作のためPOSTを使う。リクエストボディにJSON（`memberId`, `loanId`, `newDueDate`）を含めて送信し、レスポンスから `ExtensionResult` を取得する。
-
-- **`RestClient` を知らない参加者がいる場合:**
-  Spring Boot 3.2 以降で推奨される HTTP クライアント。`RestTemplate` の後継にあたる。`RestTemplate` で実装しても問題ない。
+- **`DatabaseLoanExtensionAdapter` が `LoanRepository` を使うことについて:**
+  アダプターは `LoanRepository` を使って `loans` テーブルの `due_date` と `extended` を更新する。サービスも `loanRepository.save()` で同じ更新を行っている。JPA の永続化コンテキスト内では同じエンティティが管理されるため、実行時に競合は発生しない。
 
 - **E2Eテストで既存テストが壊れた場合:**
-  `ExternalLoanExtensionAdapter` を追加すると、`LoanExtensionPort` のBeanが2つ存在することになる。テストクラスに `@TestConfiguration` + `@Primary` でフェイクを登録していないテストクラスでは、どちらのBeanを使うか解決できずにエラーになる。壊れた場合はそのテストクラスにも `@TestConfiguration` を追加するか、共通のテスト用設定クラスを `src/test/java` に切り出すことを検討する。
+  `DatabaseLoanExtensionAdapter` を追加すると、`LoanExtensionPort` のBeanが2つ存在することになる。テストクラスに `@TestConfiguration` + `@Primary` でフェイクを登録していないテストクラスでは、どちらのBeanを使うか解決できずにエラーになる。壊れた場合はそのテストクラスにも `@TestConfiguration` を追加するか、共通のテスト用設定クラスを `src/test/java` に切り出すことを検討する。
 
 ---
 
@@ -693,15 +672,12 @@ BUILD SUCCESS
 | 種別 | 指摘内容 | 該当箇所 | 対応例 |
 |------|---------|---------|--------|
 | Code Smell | 未使用変数 `loan` | `LoanService.extendLoan()` のスタブ（変更前） | ステップ3でスタブを実装に置き換えることで解消される |
-| Coverage | `ExternalLoanExtensionAdapter` のカバレッジ不足 | `infrastructure/` | E2Eテストではフェイクに差し替えているため、本物の HTTP 通信コードはカバーされない。これは意図的 |
+| Coverage | `DatabaseLoanExtensionAdapter` のカバレッジ不足 | `infrastructure/` | E2Eテストではフェイクに差し替えているため、本物のDB更新コードはカバーされない。これは意図的 |
 
 ### 指導ポイント
 
-- **ブラックリスト課題との違い ─ 空の catch ブロックがない:**
-  この課題ではフェイルオープンの実装がないため、空の `catch` ブロックに関するSonarQube指摘は発生しない。外部サービスの障害時はそのまま例外が伝播して延長が失敗する。これにより、ブラックリスト課題で問題になった「`catch (RuntimeException e)` で `IllegalStateException` も握りつぶされる」という典型的なバグパターンも発生しない。
-
 - **カバレッジの解釈:**
-  `ExternalLoanExtensionAdapter` のカバレッジが低いのは、テストでフェイクに差し替えているため。これは正しいテスト設計の結果であり、カバレッジのために外部サービスを呼ぶテストを書くべきではない。SonarQube の数値を盲信せず、テスト設計の意図を理解することが重要。
+  `DatabaseLoanExtensionAdapter` のカバレッジが低いのは、テストでフェイクに差し替えているため。これは正しいテスト設計の結果であり、カバレッジのためにテストでアダプターを使うべきではない。SonarQube の数値を盲信せず、テスト設計の意図を理解することが重要。
 
 - **スタブの未使用変数について:**
   変更前の `extendLoan()` スタブでは `loan` 変数を取得した直後に `UnsupportedOperationException` をスローしており、SonarQube が未使用変数として指摘する可能性がある。ステップ3の実装で `loan` 変数を使うようになるため、この指摘は自然に解消される。参加者がステップ5の時点でこの指摘を見た場合は、「すでに解消済み」と確認してもらう。
@@ -717,7 +693,7 @@ BUILD SUCCESS
 | `LoanService` のコンストラクタでエラー | `LoanExtensionPort` のBeanが見つからない | `@TestConfiguration` でフェイクをBean登録する |
 | `extendLoan()` が `UnsupportedOperationException` をスローする | スタブを実装に置き換えていない | ステップ3で `extendLoan()` の中身を実装する |
 | 延長済みテストが通ってしまう | `isExtended()` のチェックを入れていない | `loan.isExtended()` をチェックして `IllegalStateException` をスローする |
-| E2Eテストで既存テストが壊れる | `ExternalLoanExtensionAdapter` がBean登録されたが外部サービスに接続できない | `@TestConfiguration` + `@Primary` でフェイクを優先させる |
-| `ExtensionResult` のデシリアライズエラー | JSON のフィールド名と record のコンポーネント名が不一致 | 外部サービスのレスポンス JSON と `record` のフィールド名を一致させる |
+| E2Eテストで既存テストが壊れる | `DatabaseLoanExtensionAdapter` がBean登録されてBeanが2つ存在する | `@TestConfiguration` + `@Primary` でフェイクを優先させる |
 | `FakeLoanExtensionPort` を `@Autowired` できない | `@Bean` の戻り値型が `LoanExtensionPort` になっている | 戻り値型を `FakeLoanExtensionPort` に変更する |
 | Playwright テストで「延長」ボタンが見つからない | フロントエンドの実装が未反映 | フロントエンドに延長ボタンと延長済バッジのUIが実装されていることを確認する |
+| `infrastructure` パッケージが見つからない | ディレクトリが未作成 | `src/main/java/com/example/library/infrastructure/` を手動で作成する |

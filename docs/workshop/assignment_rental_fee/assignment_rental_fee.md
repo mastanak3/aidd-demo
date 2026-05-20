@@ -183,7 +183,8 @@ class RentalFeeCalculatorTest {
 テストを実行して、**失敗する**ことを確認します:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 > **確認ポイント:**
@@ -204,7 +205,8 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 テストを実行して、**成功する**ことを確認:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 #### 1-3. Refactor
@@ -232,7 +234,8 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 テストを実行して失敗を確認:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 > テスト1〜2はパスし、テスト3〜4が失敗するはずです。
@@ -251,7 +254,8 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 テストを実行:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 #### 2-3. Refactor
@@ -276,7 +280,8 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 テストを実行して失敗を確認:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 #### 3-2. Green: 上限ロジックを実装
@@ -295,7 +300,8 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 テストを実行:
 
 ```bash
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 #### 3-3. Refactor & 全テスト実行
@@ -303,7 +309,7 @@ mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
 最終的なリファクタリングを行い、全テストを実行して確認します:
 
 ```bash
-mvn test -pl backend
+mvn test
 ```
 
 > **チェックポイント:**

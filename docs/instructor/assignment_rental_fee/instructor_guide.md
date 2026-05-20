@@ -143,7 +143,8 @@ public class RentalFeeCalculator {
 ### テスト実行結果
 
 ```
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 ```
@@ -213,7 +214,8 @@ public class RentalFeeCalculator {
 ### テスト実行結果
 
 ```
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 ```
@@ -298,7 +300,8 @@ public class RentalFeeCalculator {
 ### テスト実行結果
 
 ```
-mvn test -pl backend -Dtest="*RentalFeeCalculatorTest"
+cd backend
+mvn test -Dtest="*RentalFeeCalculatorTest"
 ```
 
 ```
