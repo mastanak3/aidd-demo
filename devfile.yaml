@@ -35,6 +35,8 @@ components:
           value: "http://localhost:9000"
         - name: SONAR_ADMIN_PASSWORD
           value: "sonarpass"
+        - name: PLAYWRIGHT_BROWSERS_PATH
+          value: "/opt/playwright-browsers"
 
   - name: postgresql
     container:
