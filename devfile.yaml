@@ -18,6 +18,10 @@ components:
           targetPort: 3001
           exposure: public
           secure: true
+        - name: nextjs-app
+          targetPort: 3000
+          exposure: public
+          secure: true
       env:
         - name: GOOGLE_APPLICATION_CREDENTIALS
           value: /home/user/gcp-secret/auth.json
