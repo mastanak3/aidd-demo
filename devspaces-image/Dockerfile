@@ -21,6 +21,7 @@ RUN dnf install -y --nodocs \
     cairo \
     alsa-lib \
     vlgothic-fonts \
+    postgresql \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 

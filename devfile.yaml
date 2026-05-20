@@ -25,6 +25,16 @@ components:
           value: "your-gcp-project-id"
         - name: ANTHROPIC_VERTEX_REGION
           value: "global"
+        - name: DATABASE_URL
+          value: "jdbc:postgresql://localhost:5432/library"
+        - name: DATABASE_USER
+          value: "library"
+        - name: DATABASE_PASSWORD
+          value: "library"
+        - name: SONAR_URL
+          value: "http://localhost:9000"
+        - name: SONAR_ADMIN_PASSWORD
+          value: "sonarpass"
 
   - name: postgresql
     container:

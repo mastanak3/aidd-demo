@@ -25,6 +25,8 @@ jobs:
         with:
           fetch-depth: 0
       - name: Run tests and SonarQube analysis
+        env:
+          SONAR_URL: http://sonarqube:9000
         run: >
           export PATH="$JAVA_HOME/bin:$PATH" &&
           cd backend &&

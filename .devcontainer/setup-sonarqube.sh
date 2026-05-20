@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SONAR_URL="http://sonarqube:9000"
+SONAR_URL="${SONAR_URL:-http://sonarqube:9000}"
 SONAR_DEFAULT_PASSWORD="admin"
 SONAR_NEW_PASSWORD="${SONAR_ADMIN_PASSWORD:-sonarpass}"
 GATE_NAME="CI Gate"
