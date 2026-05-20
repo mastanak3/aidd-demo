@@ -30,6 +30,7 @@ USER 10001
 RUN bash -lc "sdk default java 21.0.5-tem && sdk default maven 3.9.15"
 
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
+ENV npm_config_cache=/tmp/.npm
 USER 0
 RUN mkdir -p $PLAYWRIGHT_BROWSERS_PATH && chmod 777 $PLAYWRIGHT_BROWSERS_PATH
 USER 10001
