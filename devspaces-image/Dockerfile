@@ -20,7 +20,7 @@ RUN dnf install -y --nodocs \
     pango \
     cairo \
     alsa-lib \
-    google-noto-sans-cjk-fonts \
+    vlgothic-fonts \
     && dnf clean all \
     && rm -rf /var/cache/dnf
 
