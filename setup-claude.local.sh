@@ -66,10 +66,11 @@ echo ""
 echo "Step 3/4: Setting Quota Project"
 echo "----------------------------------------"
 echo ""
-echo "Setting quota project to: REDACTED-QUOTA-PROJECT"
+QUOTA_PROJECT="${GCP_QUOTA_PROJECT:-${GCP_PROJECT_ID}}"
+echo "Setting quota project to: ${QUOTA_PROJECT}"
 echo ""
 
-gcloud auth application-default set-quota-project REDACTED-QUOTA-PROJECT
+gcloud auth application-default set-quota-project "${QUOTA_PROJECT}"
 
 echo ""
 echo "✓ Quota project set"
