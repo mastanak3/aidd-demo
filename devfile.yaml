@@ -61,7 +61,7 @@ components:
   - name: sonarqube
     container:
       image: sonarqube:lts-community
-      memoryLimit: 2G
+      memoryLimit: 4G
       env:
         - name: SONAR_ES_BOOTSTRAP_CHECKS_DISABLE
           value: "true"
